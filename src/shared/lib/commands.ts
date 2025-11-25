@@ -26,7 +26,8 @@ export interface CommandHandler {
   execute: (args: string[], context?: CommandContext) => CommandResult | CommandResult[];
 }
 
-const ASCII_LOGO = `
+// Split banner into header (ASCII art) and footer (text) for different sizing
+const ASCII_LOGO_HEADER = `
 ╔═══════════════════════════════════════════════════════════════════════════════════╗
 ║ █████╗ ███╗   ███╗ ██████╗ ██████╗ ███████╗   ██████╗ ██╗   ██╗██╗██╗     ██████╗ ║
 ║██╔══██╗████╗ ████║██╔═══██╗██╔══██╗██╔════╝   ██╔══██╗██║   ██║██║██║     ██╔══██╗║
@@ -34,7 +35,10 @@ const ASCII_LOGO = `
 ║██╔══██║██║╚██╔╝██║██║   ██║██╔══██╗██╔══╝     ██╔══██╗██║   ██║██║██║     ██║  ██║║
 ║██║  ██║██║ ╚═╝ ██║╚██████╔╝██║  ██║███████╗██╗██████╔╝╚██████╔╝██║███████╗██████╔╝║
 ║╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝╚═════╝  ╚═════╝ ╚═╝╚══════╝╚═════╝ ║
-╠═══════════════════════════════════════════════════════════════════════════════════╣
+`.trim();
+
+const ASCII_LOGO_FOOTER = `
+╔═══════════════════════════════════════════════════════════════════════════════════╗
 ║                           Qui vincit, vincit amore                                ║
 ║                      "He who conquers, conquers by love"                          ║
 ║                                                                                   ║
@@ -232,24 +236,11 @@ const commands: Record<string, CommandHandler> = {
     execute: (_args, context) => {
       const themeName = context?.currentTheme || 'dracula';
       const themeLabel = themes[themeName]?.label || themeName;
+      // Return special neofetch type for responsive rendering
       return {
         type: 'output',
-        lines: [
-            '',
-            '    ▄██▄ ▄██▄ ▄██▄        vincit_amore@amore.build',
-            '    ██████████████        ────────────────────────',
-            '    ▀▀▀▀ ▀▀▀▀ ▀▀▀▀        Title: Fullstack Engineer',
-            '      ▄█▄    ▄█▄          Motto: Qui vincit, vincit amore',
-            '    ▄█████▄▄█████▄        OS: Terminal Portfolio v1.0',
-            '    ██████████████        Shell: custom-zsh',
-            '    ▀████████████▀        Terminal: xterm-256color',
-            '      ▀████████▀          Resolution: Responsive',
-            `        ▀████▀            Theme: ${themeLabel}`,
-            '          ▀▀',
-            '                          Stack: React, TypeScript, XState',
-            '                          Focus: IT/OT, SCADA, Full Stack',
-            '',
-        ],
+        target: 'neofetch',
+        content: JSON.stringify({ theme: themeLabel }),
       };
     },
   },
@@ -358,8 +349,8 @@ export function parseCommand(input: string, context?: CommandContext): CommandRe
   return Array.isArray(result) ? result : [result];
 }
 
-export function getWelcomeMessage(): string {
-  return ASCII_LOGO;
+export function getWelcomeMessage(): { header: string; footer: string } {
+  return { header: ASCII_LOGO_HEADER, footer: ASCII_LOGO_FOOTER };
 }
 
 export function getCommandSuggestions(input: string): string[] {

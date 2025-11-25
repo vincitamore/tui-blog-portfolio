@@ -181,6 +181,11 @@ const App: React.FC = () => {
               setShowPasswordChange(true);
               break;
             }
+            // Check for neofetch (special responsive rendering)
+            if (result.target === 'neofetch') {
+              addLine({ type: 'neofetch' as any, content: result.content || '{}' });
+              break;
+            }
             if (result.lines) {
               addLines(result.lines, 'output');
             } else if (result.content) {
@@ -233,17 +238,29 @@ const App: React.FC = () => {
     setCurrentScreen('terminal');
   }, [addLine]);
 
-  // Welcome message component - scales down on mobile, no scrollbar
+  // Welcome message component - ASCII art stays small, text below is larger on mobile
+  const welcomeBanner = getWelcomeMessage();
   const WelcomeMessage = (
-    <div className="flex justify-center overflow-hidden">
+    <div className="flex flex-col items-center overflow-hidden">
+      {/* ASCII Art Header - stays small on mobile */}
       <div
-        className="leading-none whitespace-pre font-mono text-[5px] xs:text-[6px] sm:text-[8px] md:text-[10px] lg:text-xs origin-center"
+        className="leading-none whitespace-pre font-mono text-[5px] sm:text-[8px] md:text-[10px] lg:text-xs"
         style={{ 
           color: 'var(--term-primary)',
           background: 'transparent',
         }}
       >
-        {getWelcomeMessage()}
+        {welcomeBanner.header}
+      </div>
+      {/* Footer text - larger on mobile for readability */}
+      <div
+        className="leading-none whitespace-pre font-mono text-[9px] sm:text-[9px] md:text-[10px] lg:text-xs"
+        style={{ 
+          color: 'var(--term-primary)',
+          background: 'transparent',
+        }}
+      >
+        {welcomeBanner.footer}
       </div>
     </div>
   );

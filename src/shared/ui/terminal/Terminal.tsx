@@ -3,10 +3,71 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export interface TerminalLine {
   id: string;
-  type: 'command' | 'output' | 'error' | 'info' | 'success';
+  type: 'command' | 'output' | 'error' | 'info' | 'success' | 'neofetch';
   content: string;
   timestamp?: Date;
 }
+
+// Neofetch ASCII art
+const NEOFETCH_ART = `    ▄██▄ ▄██▄ ▄██▄
+    ██████████████
+    ▀▀▀▀ ▀▀▀▀ ▀▀▀▀
+      ▄█▄    ▄█▄
+    ▄█████▄▄█████▄
+    ██████████████
+    ▀████████████▀
+      ▀████████▀
+        ▀████▀
+          ▀▀`;
+
+// Responsive Neofetch component
+const NeofetchOutput: React.FC<{ theme: string }> = ({ theme }) => {
+  const info = [
+    { label: 'vincit_amore@amore.build', value: '' },
+    { label: '────────────────────────', value: '' },
+    { label: 'Title', value: 'Fullstack Engineer' },
+    { label: 'Motto', value: 'Qui vincit, vincit amore' },
+    { label: 'OS', value: 'Terminal Portfolio v1.0' },
+    { label: 'Shell', value: 'custom-zsh' },
+    { label: 'Terminal', value: 'xterm-256color' },
+    { label: 'Resolution', value: 'Responsive' },
+    { label: 'Theme', value: theme },
+    { label: 'Stack', value: 'React, TypeScript, XState' },
+    { label: 'Focus', value: 'IT/OT, SCADA, Full Stack' },
+  ];
+
+  return (
+    <div className="overflow-hidden my-2">
+      {/* Flex container - always side by side */}
+      <div className="flex flex-row items-center gap-2 sm:gap-4">
+        {/* ASCII Art - scales down on mobile */}
+        <div
+          className="whitespace-pre font-mono text-[8px] sm:text-[10px] md:text-xs leading-tight shrink-0"
+          style={{ color: 'var(--term-primary)' }}
+        >
+          {NEOFETCH_ART}
+        </div>
+        {/* Info section */}
+        <div className="text-xs sm:text-sm space-y-0.5">
+          {info.map((item, i) => (
+            <div key={i}>
+              {item.value ? (
+                <>
+                  <span style={{ color: 'var(--term-primary)' }}>{item.label}:</span>
+                  <span style={{ color: 'var(--term-foreground)' }}> {item.value}</span>
+                </>
+              ) : (
+                <span style={{ color: i === 0 ? 'var(--term-accent)' : 'var(--term-muted)' }}>
+                  {item.label}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface TerminalProps {
   lines: TerminalLine[];
@@ -154,7 +215,7 @@ const Terminal: React.FC<TerminalProps> = ({
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.15 }}
-              className={`whitespace-pre-wrap break-words ${getLineColor(line.type)}`}
+              className={line.type === 'neofetch' ? '' : `whitespace-pre-wrap break-words ${getLineColor(line.type)}`}
             >
               {line.type === 'command' && (
                 <span className="text-[var(--term-muted)]">
@@ -166,7 +227,17 @@ const Terminal: React.FC<TerminalProps> = ({
                   <span className="text-[var(--term-foreground)]">$ </span>
                 </span>
               )}
-              {line.content}
+              {line.type === 'neofetch' ? (
+                <NeofetchOutput theme={(() => {
+                  try {
+                    return JSON.parse(line.content).theme;
+                  } catch {
+                    return 'dracula';
+                  }
+                })()} />
+              ) : (
+                line.content
+              )}
             </motion.div>
           ))}
         </AnimatePresence>
