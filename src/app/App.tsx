@@ -242,12 +242,13 @@ const App: React.FC = () => {
   const welcomeBanner = getWelcomeMessage();
   const WelcomeMessage = (
     <div className="flex flex-col items-center overflow-hidden">
-      {/* ASCII Art Header - stays small on mobile */}
+      {/* ASCII Art Header - stays small on mobile, tight line height */}
       <div
-        className="leading-none whitespace-pre font-mono text-[5px] sm:text-[8px] md:text-[10px] lg:text-xs"
+        className="whitespace-pre font-mono text-[5px] sm:text-[8px] md:text-[10px] lg:text-xs"
         style={{ 
           color: 'var(--term-primary)',
           background: 'transparent',
+          lineHeight: 0.9,
         }}
       >
         {welcomeBanner.header}
