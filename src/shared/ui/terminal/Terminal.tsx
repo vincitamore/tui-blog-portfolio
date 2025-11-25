@@ -230,6 +230,12 @@ const renderClickableOutput = (
   return <>{parts}</>;
 };
 
+// Check if device is likely mobile/touch (to avoid keyboard popup on link clicks)
+const isTouchDevice = () => {
+  if (typeof window === 'undefined') return false;
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+};
+
 /**
  * Terminal shell component with command input and blinking cursor.
  * Designed to feel like a real modern terminal.
@@ -249,6 +255,13 @@ const Terminal: React.FC<TerminalProps> = ({
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
+  
+  // Focus input only on non-touch devices to avoid keyboard popup
+  const focusInput = useCallback(() => {
+    if (!isTouchDevice()) {
+      inputRef.current?.focus();
+    }
+  }, []);
 
   // Auto-type effect
   useEffect(() => {
@@ -284,32 +297,32 @@ const Terminal: React.FC<TerminalProps> = ({
     };
   }, [autoTypeCommand, onCommand, onAutoTypeComplete]);
 
-  // Auto-scroll to bottom and maintain focus
+  // Auto-scroll to bottom and maintain focus (desktop only)
   useEffect(() => {
     if (terminalRef.current) {
       terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
     }
-    // Always keep input focused when lines change
-    inputRef.current?.focus();
-  }, [lines]);
+    // Focus input when lines change - but not on touch devices (avoids keyboard popup)
+    focusInput();
+  }, [lines, focusInput]);
 
-  // Focus input on mount and when window regains focus
+  // Focus input on mount and when window regains focus (desktop only)
   useEffect(() => {
-    inputRef.current?.focus();
+    focusInput();
 
-    // Refocus when window regains focus
+    // Refocus when window regains focus (desktop only)
     const handleWindowFocus = () => {
-      inputRef.current?.focus();
+      focusInput();
     };
 
     window.addEventListener('focus', handleWindowFocus);
     return () => window.removeEventListener('focus', handleWindowFocus);
-  }, []);
+  }, [focusInput]);
 
-  // Focus input on click anywhere in terminal
+  // Focus input on click anywhere in terminal (desktop only - touch users tap input directly)
   const handleTerminalClick = useCallback(() => {
-    inputRef.current?.focus();
-  }, []);
+    focusInput();
+  }, [focusInput]);
 
   // Handle command submission
   const handleSubmit = useCallback(
@@ -331,12 +344,12 @@ const Terminal: React.FC<TerminalProps> = ({
     [input, isProcessing, onCommand],
   );
 
-  // Re-focus when processing completes
+  // Re-focus when processing completes (desktop only)
   useEffect(() => {
     if (!isProcessing) {
-      inputRef.current?.focus();
+      focusInput();
     }
-  }, [isProcessing]);
+  }, [isProcessing, focusInput]);
 
   // Handle keyboard navigation
   const handleKeyDown = useCallback(
