@@ -6,6 +6,7 @@ import type { BlogPost } from '../../../shared/lib/api';
 import { renderMarkdown, stripMarkdown } from '../../../shared/lib/markdown';
 import { TuiEditor } from '../../../shared/ui/editor';
 import type { EditorData } from '../../../shared/ui/editor';
+import { TouchNav, type NavAction } from '../../../shared/ui/tui';
 
 interface BlogAppProps {
   onBack: () => void;
@@ -16,6 +17,7 @@ interface BlogAppProps {
  * Blog TUI Application
  * Displays blog posts in a terminal-style reader
  * Admin mode allows creating, editing, and deleting posts
+ * Touch-friendly navigation for mobile users
  */
 const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -158,6 +160,27 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
     }
   }, [viewingPost]);
 
+  // Navigation actions for list view
+  const getListActions = (): NavAction[] => {
+    const actions: NavAction[] = [];
+    if (isAdmin) {
+      actions.push({ key: 'n', label: 'New', onClick: () => setIsCreating(true) });
+    }
+    actions.push({ key: 'q', label: 'Back', onClick: onBack });
+    return actions;
+  };
+
+  // Navigation actions for post view
+  const getPostActions = (): NavAction[] => {
+    const actions: NavAction[] = [];
+    if (isAdmin) {
+      actions.push({ key: 'e', label: 'Edit', onClick: () => viewingPost && setEditingPost(viewingPost) });
+      actions.push({ key: 'd', label: 'Delete', onClick: () => setShowDeleteConfirm(true), variant: 'danger' });
+    }
+    actions.push({ key: 'q', label: 'Back', onClick: () => setViewingPost(null) });
+    return actions;
+  };
+
   // Show editor for new post
   if (isCreating) {
     return (
@@ -198,193 +221,178 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
   // Show individual post
   if (viewingPost) {
     return (
-      <div className="h-full overflow-auto p-4" style={{ color: 'var(--term-foreground)' }}>
+      <div className="h-full flex flex-col" style={{ color: 'var(--term-foreground)' }}>
+        {/* Header */}
         <div
-          className="flex items-center justify-between px-2 py-1 mb-4 border-b"
+          className="flex items-center justify-between px-4 py-2 border-b shrink-0"
           style={{ borderColor: 'var(--term-border)' }}
         >
           <span style={{ color: 'var(--term-muted)' }}>BLOG POST</span>
-          <span style={{ color: 'var(--term-muted)' }}>
+          <span className="hidden sm:block text-sm" style={{ color: 'var(--term-muted)' }}>
             {isAdmin ? '[e] edit | [d] delete | ' : ''}[q] back
           </span>
         </div>
 
-        {/* Delete confirmation modal */}
-        {showDeleteConfirm && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 px-4 py-3 border"
-            style={{ 
-              borderColor: 'var(--term-error)', 
-              backgroundColor: 'var(--term-selection)' 
-            }}
-          >
-            <p style={{ color: 'var(--term-error)' }}>
-              Delete "{viewingPost.title}"?
-            </p>
-            <p className="text-sm mt-1" style={{ color: 'var(--term-muted)' }}>
-              Press [y] to confirm, [n] to cancel
-            </p>
-          </motion.div>
-        )}
-
-        {/* Admin action buttons */}
-        {isAdmin && !showDeleteConfirm && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 px-2 flex gap-2"
-          >
-            <button
-              onClick={() => setEditingPost(viewingPost)}
-              className="px-3 py-1 text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: 'var(--term-selection)',
-                color: 'var(--term-primary)',
-                border: '1px solid var(--term-primary)',
+        {/* Content */}
+        <div className="flex-1 overflow-auto p-4">
+          {/* Delete confirmation modal */}
+          {showDeleteConfirm && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 px-4 py-3 border"
+              style={{ 
+                borderColor: 'var(--term-error)', 
+                backgroundColor: 'var(--term-selection)' 
               }}
             >
-              Edit [e]
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="px-3 py-1 text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: 'var(--term-selection)',
-                color: 'var(--term-error)',
-                border: '1px solid var(--term-error)',
-              }}
-            >
-              Delete [d]
-            </button>
-          </motion.div>
-        )}
-
-        <article className="px-2 space-y-4">
-          <header>
-            <h1 className="text-xl font-bold mb-2" style={{ color: 'var(--term-primary)' }}>
-              {viewingPost.title}
-            </h1>
-            <time className="text-sm" style={{ color: 'var(--term-muted)' }}>
-              {format(new Date(viewingPost.date), 'MMMM d, yyyy')}
-            </time>
-            {viewingPost.tags && viewingPost.tags.length > 0 && (
-              <div className="flex gap-2 mt-2">
-                {viewingPost.tags.map(tag => (
-                  <span
-                    key={tag}
-                    className="text-xs px-2 py-0.5"
-                    style={{ backgroundColor: 'var(--term-selection)', color: 'var(--term-secondary)' }}
-                  >
-                    {tag}
-                  </span>
-                ))}
+              <p style={{ color: 'var(--term-error)' }}>
+                Delete "{viewingPost.title}"?
+              </p>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={handleConfirmDelete}
+                  className="px-4 py-2 text-sm font-medium min-h-[44px] touch-manipulation"
+                  style={{
+                    backgroundColor: 'var(--term-error)',
+                    color: 'var(--term-background)',
+                  }}
+                >
+                  [y] Yes, Delete
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-4 py-2 text-sm font-medium min-h-[44px] touch-manipulation"
+                  style={{
+                    backgroundColor: 'var(--term-selection)',
+                    color: 'var(--term-foreground)',
+                    border: '1px solid var(--term-border)',
+                  }}
+                >
+                  [n] Cancel
+                </button>
               </div>
-            )}
-          </header>
+            </motion.div>
+          )}
 
-          <div
-            className="prose prose-invert max-w-none leading-relaxed markdown-content"
-            style={{ color: 'var(--term-foreground)' }}
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(viewingPost.content || viewingPost.excerpt) }}
-          />
+          <article className="space-y-4">
+            <header>
+              <h1 className="text-xl font-bold mb-2" style={{ color: 'var(--term-primary)' }}>
+                {viewingPost.title}
+              </h1>
+              <time className="text-sm" style={{ color: 'var(--term-muted)' }}>
+                {format(new Date(viewingPost.date), 'MMMM d, yyyy')}
+              </time>
+              {viewingPost.tags && viewingPost.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {viewingPost.tags.map(tag => (
+                    <span
+                      key={tag}
+                      className="text-xs px-2 py-0.5"
+                      style={{ backgroundColor: 'var(--term-selection)', color: 'var(--term-secondary)' }}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </header>
 
-          <footer
-            className="pt-4 border-t text-sm"
-            style={{ borderColor: 'var(--term-border)', color: 'var(--term-muted)' }}
-          >
-            Press [q] or [Esc] to return to post list
-          </footer>
-        </article>
+            <div
+              className="prose prose-invert max-w-none leading-relaxed markdown-content"
+              style={{ color: 'var(--term-foreground)' }}
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(viewingPost.content || viewingPost.excerpt) }}
+            />
+          </article>
+        </div>
+
+        {/* Touch Navigation Bar */}
+        <div
+          className="shrink-0 border-t p-2"
+          style={{ borderColor: 'var(--term-border)', backgroundColor: 'var(--term-selection)' }}
+        >
+          <TouchNav actions={getPostActions()} />
+        </div>
       </div>
     );
   }
 
   // Show post list
   return (
-    <div className="h-full overflow-auto p-4" style={{ color: 'var(--term-foreground)' }}>
+    <div className="h-full flex flex-col" style={{ color: 'var(--term-foreground)' }}>
+      {/* Header */}
       <div
-        className="flex items-center justify-between px-2 py-1 mb-4 border-b"
+        className="flex items-center justify-between px-4 py-2 border-b shrink-0"
         style={{ borderColor: 'var(--term-border)' }}
       >
         <span style={{ color: 'var(--term-primary)' }}>
           BLOG {isAdmin && <span style={{ color: 'var(--term-success)' }}>[ADMIN]</span>}
         </span>
-        <span style={{ color: 'var(--term-muted)' }}>
-          {posts.length} posts | [j/k] nav | [Enter] read | {isAdmin && '[n] new | '}[q] quit
+        <span className="hidden sm:block text-sm" style={{ color: 'var(--term-muted)' }}>
+          {posts.length} posts | [j/k] nav | [Enter] read
         </span>
       </div>
 
-      {saveStatus === 'saved' && (
-        <div className="mb-4 px-2 py-1 text-sm" style={{ color: 'var(--term-success)' }}>
-          Post saved successfully!
-        </div>
-      )}
+      {/* Content */}
+      <div className="flex-1 overflow-auto p-4">
+        {saveStatus === 'saved' && (
+          <div className="mb-4 px-2 py-1 text-sm" style={{ color: 'var(--term-success)' }}>
+            Post saved successfully!
+          </div>
+        )}
 
-      {isAdmin && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-4 px-2"
-        >
-          <button
-            onClick={() => setIsCreating(true)}
-            className="px-4 py-2 text-sm font-medium transition-colors"
-            style={{
-              backgroundColor: 'var(--term-selection)',
-              color: 'var(--term-primary)',
-              border: '1px solid var(--term-primary)',
-            }}
-          >
-            + New Post [n]
-          </button>
-        </motion.div>
-      )}
+        {isLoading ? (
+          <div className="px-2" style={{ color: 'var(--term-muted)' }}>Loading posts...</div>
+        ) : posts.length === 0 ? (
+          <div className="px-2" style={{ color: 'var(--term-muted)' }}>No posts yet.</div>
+        ) : (
+          <div className="space-y-1">
+            {posts.map((post, index) => (
+              <motion.div
+                key={post.slug}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
+                onClick={() => {
+                  setSelectedIndex(index);
+                  setViewingPost(post);
+                }}
+                className="flex items-start gap-3 px-2 py-3 cursor-pointer transition-colors touch-manipulation"
+                style={{
+                  backgroundColor: index === selectedIndex ? 'var(--term-selection)' : 'transparent',
+                  borderLeft: index === selectedIndex ? '2px solid var(--term-primary)' : '2px solid transparent',
+                }}
+              >
+                <span style={{ color: 'var(--term-muted)' }}>{index === selectedIndex ? '>' : ' '}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                    <span
+                      className="font-medium"
+                      style={{ color: index === selectedIndex ? 'var(--term-primary)' : 'var(--term-foreground)' }}
+                    >
+                      {post.title}
+                    </span>
+                    <span className="text-sm" style={{ color: 'var(--term-muted)' }}>
+                      {format(new Date(post.date), 'MMM d, yyyy')}
+                    </span>
+                  </div>
+                  <div className="text-sm truncate mt-1" style={{ color: 'var(--term-muted)' }}>
+                    {post.excerpt}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {isLoading ? (
-        <div className="px-2" style={{ color: 'var(--term-muted)' }}>Loading posts...</div>
-      ) : posts.length === 0 ? (
-        <div className="px-2" style={{ color: 'var(--term-muted)' }}>No posts yet.</div>
-      ) : (
-        <div className="space-y-1">
-          {posts.map((post, index) => (
-            <motion.div
-              key={post.slug}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.05 }}
-              onClick={() => {
-                setSelectedIndex(index);
-                setViewingPost(post);
-              }}
-              className="flex items-start gap-3 px-2 py-2 cursor-pointer transition-colors"
-              style={{
-                backgroundColor: index === selectedIndex ? 'var(--term-selection)' : 'transparent',
-                borderLeft: index === selectedIndex ? '2px solid var(--term-primary)' : '2px solid transparent',
-              }}
-            >
-              <span style={{ color: 'var(--term-muted)' }}>{index === selectedIndex ? '>' : ' '}</span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3">
-                  <span
-                    className="font-medium"
-                    style={{ color: index === selectedIndex ? 'var(--term-primary)' : 'var(--term-foreground)' }}
-                  >
-                    {post.title}
-                  </span>
-                  <span className="text-sm" style={{ color: 'var(--term-muted)' }}>
-                    {format(new Date(post.date), 'MMM d, yyyy')}
-                  </span>
-                </div>
-                <div className="text-sm truncate" style={{ color: 'var(--term-muted)' }}>
-                  {post.excerpt}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      )}
+      {/* Touch Navigation Bar */}
+      <div
+        className="shrink-0 border-t p-2"
+        style={{ borderColor: 'var(--term-border)', backgroundColor: 'var(--term-selection)' }}
+      >
+        <TouchNav actions={getListActions()} />
+      </div>
     </div>
   );
 };

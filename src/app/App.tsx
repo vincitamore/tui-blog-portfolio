@@ -173,11 +173,11 @@ const App: React.FC = () => {
     setCurrentScreen('terminal');
   }, [addLine]);
 
-  // Welcome message component - no background, transparent
+  // Welcome message component - scales down on mobile
   const WelcomeMessage = (
-    <div className="flex justify-center">
+    <div className="flex justify-center overflow-x-auto">
       <div
-        className="leading-none whitespace-pre font-mono text-[10px] sm:text-xs inline-block"
+        className="leading-none whitespace-pre font-mono text-[6px] sm:text-[8px] md:text-[10px] lg:text-xs origin-center"
         style={{ 
           color: 'var(--term-primary)',
           background: 'transparent',

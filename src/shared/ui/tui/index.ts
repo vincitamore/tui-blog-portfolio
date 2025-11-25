@@ -9,6 +9,8 @@ export { default as TuiBox } from './TuiBox';
 export { default as TuiMenu } from './TuiMenu';
 export { default as TuiScreen } from './TuiScreen';
 export { default as TuiStatusBar } from './TuiStatusBar';
+export { default as TouchNav } from './TouchNav';
+export type { NavAction } from './TouchNav';
 
 
 

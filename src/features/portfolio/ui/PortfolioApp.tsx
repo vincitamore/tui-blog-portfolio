@@ -4,6 +4,7 @@ import { fetchProjects, createProject, updateProject, deleteProject, reorderProj
 import type { Project } from '../../../shared/lib/api';
 import { TuiEditor } from '../../../shared/ui/editor';
 import type { EditorData } from '../../../shared/ui/editor';
+import { TouchNav, type NavAction } from '../../../shared/ui/tui';
 
 interface PortfolioAppProps {
   onBack: () => void;
@@ -14,6 +15,7 @@ interface PortfolioAppProps {
  * Portfolio TUI Application
  * Displays projects in a terminal-style list view
  * Admin mode allows creating, editing, deleting, and reordering projects
+ * Touch-friendly navigation for mobile users
  */
 const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -214,6 +216,29 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
     }
   }, [viewingProject]);
 
+  // Navigation actions for list view
+  const getListActions = (): NavAction[] => {
+    const actions: NavAction[] = [];
+    if (isAdmin) {
+      actions.push({ key: 'n', label: 'New', onClick: () => setIsCreating(true) });
+      actions.push({ key: '↑', label: 'Up', onClick: handleMoveUp, disabled: selectedIndex <= 0 });
+      actions.push({ key: '↓', label: 'Down', onClick: handleMoveDown, disabled: selectedIndex >= projects.length - 1 });
+    }
+    actions.push({ key: 'q', label: 'Back', onClick: onBack });
+    return actions;
+  };
+
+  // Navigation actions for project view
+  const getProjectActions = (): NavAction[] => {
+    const actions: NavAction[] = [];
+    if (isAdmin) {
+      actions.push({ key: 'e', label: 'Edit', onClick: () => viewingProject && setEditingProject(viewingProject) });
+      actions.push({ key: 'd', label: 'Delete', onClick: () => setShowDeleteConfirm(true), variant: 'danger' });
+    }
+    actions.push({ key: 'q', label: 'Back', onClick: () => setViewingProject(null) });
+    return actions;
+  };
+
   // Show editor for new project
   if (isCreating) {
     return (
@@ -260,125 +285,118 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
   // Show individual project
   if (viewingProject) {
     return (
-      <div className="h-full overflow-auto p-4" style={{ color: 'var(--term-foreground)' }}>
+      <div className="h-full flex flex-col" style={{ color: 'var(--term-foreground)' }}>
+        {/* Header */}
         <div
-          className="flex items-center justify-between px-2 py-1 mb-4 border-b"
+          className="flex items-center justify-between px-4 py-2 border-b shrink-0"
           style={{ borderColor: 'var(--term-border)' }}
         >
           <span style={{ color: 'var(--term-muted)' }}>PROJECT DETAILS</span>
-          <span style={{ color: 'var(--term-muted)' }}>
+          <span className="hidden sm:block text-sm" style={{ color: 'var(--term-muted)' }}>
             {isAdmin ? '[e] edit | [d] delete | ' : ''}[q] back
           </span>
         </div>
 
-        {/* Delete confirmation modal */}
-        {showDeleteConfirm && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 px-4 py-3 border"
-            style={{ 
-              borderColor: 'var(--term-error)', 
-              backgroundColor: 'var(--term-selection)' 
-            }}
-          >
-            <p style={{ color: 'var(--term-error)' }}>
-              Delete "{viewingProject.title}"?
-            </p>
-            <p className="text-sm mt-1" style={{ color: 'var(--term-muted)' }}>
-              Press [y] to confirm, [n] to cancel
-            </p>
-          </motion.div>
-        )}
-
-        {/* Admin action buttons */}
-        {isAdmin && !showDeleteConfirm && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 px-2 flex gap-2"
-          >
-            <button
-              onClick={() => setEditingProject(viewingProject)}
-              className="px-3 py-1 text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: 'var(--term-selection)',
-                color: 'var(--term-primary)',
-                border: '1px solid var(--term-primary)',
+        {/* Content */}
+        <div className="flex-1 overflow-auto p-4">
+          {/* Delete confirmation modal */}
+          {showDeleteConfirm && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 px-4 py-3 border"
+              style={{ 
+                borderColor: 'var(--term-error)', 
+                backgroundColor: 'var(--term-selection)' 
               }}
             >
-              Edit [e]
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="px-3 py-1 text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: 'var(--term-selection)',
-                color: 'var(--term-error)',
-                border: '1px solid var(--term-error)',
-              }}
-            >
-              Delete [d]
-            </button>
-          </motion.div>
-        )}
-
-        <div className="space-y-4 px-2">
-          <h1 className="text-xl font-bold" style={{ color: 'var(--term-primary)' }}>
-            {viewingProject.title}
-          </h1>
-
-          <div className="flex flex-wrap gap-2">
-            {viewingProject.technologies.map((tech) => (
-              <span
-                key={tech}
-                className="px-2 py-0.5 text-sm"
-                style={{ backgroundColor: 'var(--term-selection)', color: 'var(--term-secondary)' }}
-              >
-                {tech}
-              </span>
-            ))}
-          </div>
-
-          <p style={{ color: 'var(--term-foreground)' }}>{viewingProject.description}</p>
-
-          <div className="pt-4 space-y-2" style={{ color: 'var(--term-muted)' }}>
-            {viewingProject.github && (
-              <div>
-                <span style={{ color: 'var(--term-info)' }}>GitHub:</span>{' '}
-                <a
-                  href={viewingProject.github}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:no-underline"
-                  style={{ color: 'var(--term-primary)' }}
+              <p style={{ color: 'var(--term-error)' }}>
+                Delete "{viewingProject.title}"?
+              </p>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={handleConfirmDelete}
+                  className="px-4 py-2 text-sm font-medium min-h-[44px] touch-manipulation"
+                  style={{
+                    backgroundColor: 'var(--term-error)',
+                    color: 'var(--term-background)',
+                  }}
                 >
-                  {viewingProject.github}
-                </a>
-              </div>
-            )}
-            {viewingProject.link && (
-              <div>
-                <span style={{ color: 'var(--term-info)' }}>Live:</span>{' '}
-                <a
-                  href={viewingProject.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:no-underline"
-                  style={{ color: 'var(--term-primary)' }}
+                  [y] Yes, Delete
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-4 py-2 text-sm font-medium min-h-[44px] touch-manipulation"
+                  style={{
+                    backgroundColor: 'var(--term-selection)',
+                    color: 'var(--term-foreground)',
+                    border: '1px solid var(--term-border)',
+                  }}
                 >
-                  {viewingProject.link}
-                </a>
+                  [n] Cancel
+                </button>
               </div>
-            )}
-          </div>
+            </motion.div>
+          )}
 
-          <footer
-            className="pt-4 border-t text-sm"
-            style={{ borderColor: 'var(--term-border)', color: 'var(--term-muted)' }}
-          >
-            Press [q] or [Esc] to return to project list
-          </footer>
+          <div className="space-y-4">
+            <h1 className="text-xl font-bold" style={{ color: 'var(--term-primary)' }}>
+              {viewingProject.title}
+            </h1>
+
+            <div className="flex flex-wrap gap-2">
+              {viewingProject.technologies.map((tech) => (
+                <span
+                  key={tech}
+                  className="px-2 py-0.5 text-sm"
+                  style={{ backgroundColor: 'var(--term-selection)', color: 'var(--term-secondary)' }}
+                >
+                  {tech}
+                </span>
+              ))}
+            </div>
+
+            <p style={{ color: 'var(--term-foreground)' }}>{viewingProject.description}</p>
+
+            <div className="pt-4 space-y-2" style={{ color: 'var(--term-muted)' }}>
+              {viewingProject.github && (
+                <div>
+                  <span style={{ color: 'var(--term-info)' }}>GitHub:</span>{' '}
+                  <a
+                    href={viewingProject.github}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:no-underline touch-manipulation"
+                    style={{ color: 'var(--term-primary)' }}
+                  >
+                    {viewingProject.github}
+                  </a>
+                </div>
+              )}
+              {viewingProject.link && (
+                <div>
+                  <span style={{ color: 'var(--term-info)' }}>Live:</span>{' '}
+                  <a
+                    href={viewingProject.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:no-underline touch-manipulation"
+                    style={{ color: 'var(--term-primary)' }}
+                  >
+                    {viewingProject.link}
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Touch Navigation Bar */}
+        <div
+          className="shrink-0 border-t p-2"
+          style={{ borderColor: 'var(--term-border)', backgroundColor: 'var(--term-selection)' }}
+        >
+          <TouchNav actions={getProjectActions()} />
         </div>
       </div>
     );
@@ -386,123 +404,93 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
 
   // Show project list
   return (
-    <div className="h-full overflow-auto p-4" style={{ color: 'var(--term-foreground)' }}>
+    <div className="h-full flex flex-col" style={{ color: 'var(--term-foreground)' }}>
+      {/* Header */}
       <div
-        className="flex items-center justify-between px-2 py-1 mb-4 border-b"
+        className="flex items-center justify-between px-4 py-2 border-b shrink-0"
         style={{ borderColor: 'var(--term-border)' }}
       >
         <span style={{ color: 'var(--term-primary)' }}>
           PORTFOLIO {isAdmin && <span style={{ color: 'var(--term-success)' }}>[ADMIN]</span>}
         </span>
-        <span style={{ color: 'var(--term-muted)' }}>
-          {projects.length} projects | [j/k] nav | {isAdmin && '[Shift+j/k] reorder | '}[Enter] view | {isAdmin && '[n] new | '}[q] quit
+        <span className="hidden sm:block text-sm" style={{ color: 'var(--term-muted)' }}>
+          [j/k] nav | [Enter] view
         </span>
       </div>
 
-      {saveStatus === 'saved' && (
-        <div className="mb-4 px-2 py-1 text-sm" style={{ color: 'var(--term-success)' }}>
-          Project saved successfully!
-        </div>
-      )}
+      {/* Content */}
+      <div className="flex-1 overflow-auto p-4">
+        {saveStatus === 'saved' && (
+          <div className="mb-4 px-2 py-1 text-sm" style={{ color: 'var(--term-success)' }}>
+            Project saved successfully!
+          </div>
+        )}
 
-      {isAdmin && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-4 px-2 flex gap-2 flex-wrap"
-        >
-          <button
-            onClick={() => setIsCreating(true)}
-            className="px-4 py-2 text-sm font-medium transition-colors"
-            style={{
-              backgroundColor: 'var(--term-selection)',
-              color: 'var(--term-primary)',
-              border: '1px solid var(--term-primary)',
-            }}
-          >
-            + New Project [n]
-          </button>
-          <button
-            onClick={handleMoveUp}
-            disabled={selectedIndex <= 0}
-            className="px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50"
-            style={{
-              backgroundColor: 'var(--term-selection)',
-              color: 'var(--term-info)',
-              border: '1px solid var(--term-border)',
-            }}
-          >
-            Move Up [Shift+K]
-          </button>
-          <button
-            onClick={handleMoveDown}
-            disabled={selectedIndex >= projects.length - 1}
-            className="px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50"
-            style={{
-              backgroundColor: 'var(--term-selection)',
-              color: 'var(--term-info)',
-              border: '1px solid var(--term-border)',
-            }}
-          >
-            Move Down [Shift+J]
-          </button>
-        </motion.div>
-      )}
+        {isLoading ? (
+          <div className="px-2" style={{ color: 'var(--term-muted)' }}>Loading projects...</div>
+        ) : projects.length === 0 ? (
+          <div className="px-2" style={{ color: 'var(--term-muted)' }}>No projects yet.</div>
+        ) : (
+          <div className="space-y-1">
+            {projects.map((project, index) => (
+              <motion.div
+                key={project.id}
+                layout
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.15 }}
+                onClick={() => {
+                  setSelectedIndex(index);
+                  setViewingProject(project);
+                }}
+                className="flex items-start gap-3 px-2 py-3 cursor-pointer transition-colors touch-manipulation"
+                style={{
+                  backgroundColor: index === selectedIndex ? 'var(--term-selection)' : 'transparent',
+                  borderLeft: index === selectedIndex ? '2px solid var(--term-primary)' : '2px solid transparent',
+                }}
+              >
+                <span style={{ color: 'var(--term-muted)' }}>
+                  {isAdmin && (
+                    <span className="mr-2 text-xs" style={{ color: 'var(--term-muted)' }}>
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                  )}
+                  {index === selectedIndex ? '>' : ' '}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                    <span
+                      className="font-medium"
+                      style={{ color: index === selectedIndex ? 'var(--term-primary)' : 'var(--term-foreground)' }}
+                    >
+                      {project.title}
+                    </span>
+                    <div className="flex gap-1">
+                      {project.github && (
+                        <span style={{ color: 'var(--term-muted)' }} className="text-sm">[git]</span>
+                      )}
+                      {project.link && (
+                        <span style={{ color: 'var(--term-muted)' }} className="text-sm">[web]</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-sm truncate mt-1" style={{ color: 'var(--term-muted)' }}>
+                    {project.description}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {isLoading ? (
-        <div className="px-2" style={{ color: 'var(--term-muted)' }}>Loading projects...</div>
-      ) : projects.length === 0 ? (
-        <div className="px-2" style={{ color: 'var(--term-muted)' }}>No projects yet.</div>
-      ) : (
-        <div className="space-y-1">
-          {projects.map((project, index) => (
-            <motion.div
-              key={project.id}
-              layout
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.15 }}
-              onClick={() => {
-                setSelectedIndex(index);
-                setViewingProject(project);
-              }}
-              className="flex items-start gap-3 px-2 py-2 cursor-pointer transition-colors"
-              style={{
-                backgroundColor: index === selectedIndex ? 'var(--term-selection)' : 'transparent',
-                borderLeft: index === selectedIndex ? '2px solid var(--term-primary)' : '2px solid transparent',
-              }}
-            >
-              <span style={{ color: 'var(--term-muted)' }}>
-                {isAdmin && (
-                  <span className="mr-2 text-xs" style={{ color: 'var(--term-muted)' }}>
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                )}
-                {index === selectedIndex ? '>' : ' '}
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="font-medium"
-                    style={{ color: index === selectedIndex ? 'var(--term-primary)' : 'var(--term-foreground)' }}
-                  >
-                    {project.title}
-                  </span>
-                  {project.github && (
-                    <span style={{ color: 'var(--term-muted)' }} className="text-sm">[git]</span>
-                  )}
-                  {project.link && (
-                    <span style={{ color: 'var(--term-muted)' }} className="text-sm">[web]</span>
-                  )}
-                </div>
-                <div className="text-sm truncate" style={{ color: 'var(--term-muted)' }}>
-                  {project.description}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      )}
+      {/* Touch Navigation Bar */}
+      <div
+        className="shrink-0 border-t p-2"
+        style={{ borderColor: 'var(--term-border)', backgroundColor: 'var(--term-selection)' }}
+      >
+        <TouchNav actions={getListActions()} />
+      </div>
     </div>
   );
 };
