@@ -3,7 +3,10 @@
  * Communicates with the Express server to manage content
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// In production, use relative URL (nginx proxies /api to the backend)
+// In development, use localhost:3001
+const API_URL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.PROD ? '' : 'http://localhost:3001');
 
 // ============ BLOG API ============
 
