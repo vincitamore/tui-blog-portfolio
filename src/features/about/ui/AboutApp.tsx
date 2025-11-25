@@ -6,17 +6,44 @@ interface AboutAppProps {
   onBack: () => void;
 }
 
-// ASCII art banner - scales down on mobile via font-size
-const BANNER = `╔════════════════════════════════════════════════════════════════════╗
-║  ██████╗ ██╗   ██╗██╗    ██╗   ██╗██╗███╗   ██╗ ██████╗██╗████████╗║
-║ ██╔═══██╗██║   ██║██║    ██║   ██║██║████╗  ██║██╔════╝██║╚══██╔══╝║
-║ ██║   ██║██║   ██║██║    ██║   ██║██║██╔██╗ ██║██║     ██║   ██║   ║
-║ ██║▄▄ ██║██║   ██║██║    ╚██╗ ██╔╝██║██║╚██╗██║██║     ██║   ██║   ║
-║ ╚██████╔╝╚██████╔╝██║     ╚████╔╝ ██║██║ ╚████║╚██████╗██║   ██║   ║
-║  ╚══▀▀═╝  ╚═════╝ ╚═╝      ╚═══╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝╚═╝   ╚═╝   ║
-╠════════════════════════════════════════════════════════════════════╣
-║   "Qui vincit, vincit amore" - He who conquers, conquers by love   ║
-╚════════════════════════════════════════════════════════════════════╝`;
+// ASCII art banner header - no border, scales down on mobile
+const BANNER_HEADER = `
+  ██████╗ ██╗   ██╗██╗    ██╗   ██╗██╗███╗   ██╗ ██████╗██╗████████╗
+ ██╔═══██╗██║   ██║██║    ██║   ██║██║████╗  ██║██╔════╝██║╚══██╔══╝
+ ██║   ██║██║   ██║██║    ██║   ██║██║██╔██╗ ██║██║     ██║   ██║
+ ██║▄▄ ██║██║   ██║██║    ╚██╗ ██╔╝██║██║╚██╗██║██║     ██║   ██║
+ ╚██████╔╝╚██████╔╝██║     ╚████╔╝ ██║██║ ╚████║╚██████╗██║   ██║
+  ╚══▀▀═╝  ╚═════╝ ╚═╝      ╚═══╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝╚═╝   ╚═╝
+`;
+
+// Banner footer text - larger on mobile
+const BANNER_FOOTER = `"Qui vincit, vincit amore"
+He who conquers, conquers by love`;
+
+// Professional journey ASCII timeline - compact for mobile
+const JOURNEY_TIMELINE = `┌───────────────────────────────────────────┐
+│         PROFESSIONAL JOURNEY              │
+├───────────────────────────────────────────┤
+│                                           │
+│  2021+ ─► IT/OT Specialist                │
+│          Municipal Utilities              │
+│                    │                      │
+│  2014  ─► Internet Technician             │
+│          ISP Services                     │
+│                    │                      │
+│  2013  ─► Regulatory Compliance Tech      │
+│          Fuel Systems Service             │
+│                    │                      │
+│  2012  ─► Construction Specialist         │
+│          Various Projects                 │
+│                    │                      │
+│  2009  ─► Heavy Equipment Operator        │
+│          Rock Quarry Operations           │
+│                    │                      │
+│  2005+ ─► Agricultural Operations         │
+│          Family Farm                      │
+│                                           │
+└───────────────────────────────────────────┘`;
 
 /**
  * About TUI Application
@@ -40,14 +67,14 @@ const AboutApp: React.FC<AboutAppProps> = ({ onBack }) => {
   }, [handleKeyDown]);
 
   const skills = [
-    { category: 'Network Engineering', items: ['Fiber Optics', 'SCADA Networks', 'Wireless', 'IT/OT Integration'] },
-    { category: 'System Admin', items: ['Active Directory', 'Azure AD', 'Windows Server', 'UEM'] },
+    { category: 'Network Engineering', items: ['Fiber Optics (CFOT)', 'SCADA Networks', 'Wireless', 'IT/OT Integration'] },
+    { category: 'Linux & DevOps', items: ['Ubuntu/Debian/RHEL', 'Docker', 'Nginx', 'CI/CD Pipelines', 'Bash'] },
+    { category: 'System Admin', items: ['Active Directory', 'Azure AD', 'Windows Server', 'VMware', 'PowerShell'] },
     { category: 'Cybersecurity', items: ['EDR/XDR', 'Security Onion', 'OT/ICS Security', 'SIEM'] },
-    { category: 'Development', items: ['TypeScript', 'React', 'Next.js', 'Python'] },
-    { category: 'Cloud Services', items: ['Azure', 'Office 365', 'Identity Solutions'] },
-    { category: 'Infrastructure', items: ['PLC Programming', 'Industrial Control', 'Automation'] },
-    { category: 'Databases', items: ['SQL Server', 'PostgreSQL', 'TimescaleDB', 'SQLite'] },
-    { category: 'Leadership', items: ['Project Management', 'Team Leadership', 'Documentation'] },
+    { category: 'AI Integration', items: ['Anthropic/Claude', 'xAI/Grok', 'Google Gemini', 'Ollama', 'RAG Systems'] },
+    { category: 'Development', items: ['TypeScript', 'React', 'Next.js', 'Python', 'Node.js'] },
+    { category: 'Databases', items: ['PostgreSQL', 'SQL Server', 'TimescaleDB', 'SQLite', 'ChromaDB'] },
+    { category: 'Infrastructure', items: ['PLC Programming', 'Industrial Control', 'VMware HA Clusters', 'Automation'] },
   ];
 
   const contacts = [
@@ -79,14 +106,26 @@ const AboutApp: React.FC<AboutAppProps> = ({ onBack }) => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center overflow-hidden"
-            style={{ color: 'var(--term-primary)', background: 'transparent' }}
+            className="flex flex-col items-center overflow-hidden"
+            style={{ background: 'transparent' }}
           >
+            {/* ASCII Art - tight line height */}
             <div
-              className="text-[5px] xs:text-[6px] sm:text-[8px] md:text-[10px] lg:text-xs leading-tight whitespace-pre font-mono mx-auto"
-              style={{ width: 'fit-content' }}
+              className="text-[6px] sm:text-[8px] md:text-[10px] lg:text-xs whitespace-pre font-mono"
+              style={{ color: 'var(--term-primary)', lineHeight: 0.9 }}
             >
-              {BANNER}
+              {BANNER_HEADER}
+            </div>
+            {/* Motto text - larger and more readable */}
+            <div
+              className="text-[10px] sm:text-xs md:text-sm lg:text-base text-center mt-2 font-mono"
+              style={{ color: 'var(--term-primary)' }}
+            >
+              {BANNER_FOOTER.split('\n').map((line, i) => (
+                <div key={i} className={i === 0 ? 'italic' : 'text-[9px] sm:text-[11px] md:text-xs lg:text-sm'} style={i === 1 ? { color: 'var(--term-muted)' } : {}}>
+                  {line}
+                </div>
+              ))}
             </div>
           </motion.div>
 
@@ -106,24 +145,47 @@ const AboutApp: React.FC<AboutAppProps> = ({ onBack }) => {
             </h2>
             <div className="space-y-3 pl-2 sm:pl-4" style={{ color: 'var(--term-foreground)' }}>
               <p className="italic" style={{ color: 'var(--term-secondary)' }}>
-                Crafting elegant solutions with passion and precision. From infrastructure 
-                to interface, building technology that empowers and endures.
+                Building things that work and that last.
               </p>
               <p>
-                My diverse background spans technology, industrial operations, and agriculture.
-                This unique combination brings a practical, solution-oriented approach to
-                technical challenges, grounded in real-world experience and a deep understanding
-                of various industries.
+                I grew up on a farm, which means I learned early that when something breaks, 
+                you figure out how to fix it. That mindset stuck with me through quarry work, 
+                construction, and eventually into tech. Turns out the same kind of thinking 
+                that keeps equipment running also keeps networks secure and code clean.
               </p>
               <p>
-                Each stage of this journey has contributed to a comprehensive understanding of
-                complex systems. Agricultural roots taught systematic thinking and resourceful
-                problem-solving. Industrial operations developed process optimization and
-                safety-critical decision-making. Technical roles honed network engineering and
-                security expertise. This diverse foundation enables me to bridge the gap between
-                infrastructure and innovation, delivering solutions that are both technically
-                sophisticated and practically grounded.
+                These days I work at the intersection of IT and industrial systems: SCADA, PLCs, 
+                enterprise networks, the whole stack. But what I really enjoy is building 
+                software: full-stack apps, automation tools, anything that solves a real problem.
+                I care about craft, and I like working on things that matter.
               </p>
+            </div>
+          </motion.section>
+
+          {/* Professional Journey Timeline */}
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <h2
+              className="text-lg font-bold mb-3 flex items-center gap-2"
+              style={{ color: 'var(--term-primary)' }}
+            >
+              <span style={{ color: 'var(--term-muted)' }}>[</span>
+              EXPERIENCE
+              <span style={{ color: 'var(--term-muted)' }}>]</span>
+            </h2>
+            <div
+              className="overflow-hidden"
+              style={{ color: 'var(--term-secondary)', background: 'transparent' }}
+            >
+              <div
+                className="text-[11px] xs:text-[12px] sm:text-[14px] md:text-xs lg:text-sm leading-tight whitespace-pre font-mono"
+                style={{ width: 'fit-content' }}
+              >
+                {JOURNEY_TIMELINE}
+              </div>
             </div>
           </motion.section>
 

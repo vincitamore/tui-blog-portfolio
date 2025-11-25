@@ -1,25 +1,37 @@
 {
-  "name": "TUI-Portfolio",
-  "short_name": "TUI-Portfolio",
-  "description": "Terminal User Interface Portfolio/Blog - A retro-inspired portfolio with keyboard-first navigation",
+  "name": "AMORE.BUILD",
+  "short_name": "AMORE",
+  "description": "Terminal-style portfolio of a fullstack engineer. Qui vincit, vincit amore.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#00ff00",
+  "background_color": "#282a36",
+  "theme_color": "#bd93f9",
   "orientation": "any",
   "categories": ["portfolio", "blog", "developer tools"],
   "icons": [
     {
-      "src": "/pwa-192x192.svg",
+      "src": "/android-chrome-192x192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/pwa-512x512.svg",
+      "src": "/android-chrome-512x512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
