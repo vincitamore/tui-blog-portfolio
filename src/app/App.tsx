@@ -248,7 +248,7 @@ const App: React.FC = () => {
         style={{ 
           color: 'var(--term-primary)',
           background: 'transparent',
-          lineHeight: 0.9,
+          lineHeight: 1,
         }}
       >
         {welcomeBanner.header}
