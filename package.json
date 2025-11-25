@@ -1,0 +1,98 @@
+{
+  "browserslist": {
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ],
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ]
+  },
+  "dependencies": {
+    "@mdx-js/loader": "^3.1.1",
+    "@mdx-js/react": "^3.1.1",
+    "@xstate/react": "^5.0.5",
+    "autoprefixer": "^10",
+    "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
+    "express": "^5.1.0",
+    "framer-motion": "^12.23.24",
+    "fuse.js": "^7.1.0",
+    "gray-matter": "^4.0.3",
+    "lucide-react": "^0.554.0",
+    "marked": "^17.0.1",
+    "postcss": "^8",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-router-dom": "^7.9.6",
+    "tailwindcss": "^3",
+    "xstate": "^5"
+  },
+  "description": "Terminal User Interface (TUI) Portfolio application built with Vite, React, TypeScript, TailwindCSS, and XState.",
+  "devDependencies": {
+    "@eslint/js": "^9",
+    "@playwright/test": "^1.57.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.10.1",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@typescript-eslint/eslint-plugin": "^8",
+    "@typescript-eslint/parser": "^8",
+    "@vitejs/plugin-react": "^4",
+    "concurrently": "^9.2.1",
+    "eslint": "^9",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4",
+    "globals": "^15",
+    "husky": "^9",
+    "jsdom": "^27.2.0",
+    "lint-staged": "^15",
+    "prettier": "^3",
+    "tsx": "^4.20.6",
+    "typescript": "^5",
+    "vite": "^5",
+    "vite-plugin-pwa": "^1.1.0",
+    "vitest": "^4.0.13"
+  },
+  "keywords": [
+    "portfolio",
+    "react",
+    "tailwindcss",
+    "tui",
+    "typescript",
+    "vite",
+    "xstate"
+  ],
+  "license": "MIT",
+  "name": "tui-portfolio",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/tui-portfolio.git"
+  },
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "concurrently \"pnpm dev:vite\" \"pnpm dev:api\"",
+    "dev:vite": "vite",
+    "dev:api": "tsx watch server/api.ts",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "prepare": "husky",
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "generate:sitemap": "tsx scripts/generate-sitemap.ts",
+    "generate:rss": "tsx scripts/generate-rss.ts",
+    "generate": "pnpm generate:sitemap && pnpm generate:rss"
+  },
+  "type": "module",
+  "version": "0.1.0"
+}

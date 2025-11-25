@@ -1,0 +1,104 @@
+# Dependencies
+# Node.js / npm / yarn / pnpm
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnp
+.pnp.js
+
+# Production / Staging Builds
+# Vite / Webpack / other bundlers
+dist/
+build/
+out/
+
+# Development Builds / Caches
+.vite/
+.cache/
+.eslintcache
+.prettierrc.cache
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Testing / Coverage
+coverage/
+.nyc_output
+/cypress/screenshots
+/cypress/videos
+/test-results/
+playwright-report/
+__tests__/
+
+# Logs
+*.log
+logs/
+*.pid
+*.seed
+*.pid.lock
+
+# Environment Variables / Secrets
+# All .env files for security
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+ehthumbs.db
+
+# IDE / Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*~
+.vscode-test/
+
+# OS Generated Files
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+icon?
+ehthumbs.db
+Thumbs.db
+
+# Windows
+$RECYCLE.BIN/
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Project-specific (TailwindCSS / XState / Husky)
+# TailwindCSS: no unique caches beyond standard CSS builds (covered in dist/)
+# XState: no unique artifacts (machines/stores are source code)
+# Husky: .husky/ is committed, no ignores needed
+# ESLint / Prettier: caches covered above
+
+# Temporary / Runtime
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Development / PWA
+dev-dist/
+
+# Session files
+.codemind-session.json

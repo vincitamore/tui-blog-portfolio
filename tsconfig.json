@@ -1,0 +1,34 @@
+{
+  // Vite + React + TypeScript configuration: Enables strict type checking in src/,
+  // optimized for Vite's bundler (fast refresh, isolated transpilation) and build isolation
+  // via composite project references. Run `tsc --noEmit` for validation.
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true, // Support modern JS class fields
+
+    // Core libs for browser + modern JS
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+
+    "module": "ESNext",
+    "skipLibCheck": true, // Skip type checking of declaration files (improves speed)
+
+    // Vite bundler optimizations
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true, // Enables Vite's TS/JSX fast refresh
+    "resolveJsonModule": true,
+
+    // Required for Vite's esbuild transpilation pipeline
+    "isolatedModules": true,
+    "noEmit": true, // Vite handles emission/output bundling
+
+    // React JSX transform (Vite default)
+    "jsx": "react-jsx",
+
+    // Strict type safety (enforced for maintainability)
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src", "e2e", "scripts"]
+}

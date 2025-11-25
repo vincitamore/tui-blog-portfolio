@@ -1,0 +1,184 @@
+[
+  {
+    "id": "1",
+    "title": "TUI Blog Portfolio",
+    "description": "A terminal-style portfolio and blog web application that looks and feels like a real terminal. Features 23 color themes, command-line navigation, admin mode with TUI editor, and a 3D floating window effect. Built with React, TypeScript, XState, and Express.js with JSON file storage.",
+    "technologies": [
+      "React 18",
+      "TypeScript",
+      "Vite",
+      "XState",
+      "TailwindCSS",
+      "Framer Motion",
+      "Express.js"
+    ],
+    "github": "https://github.com/vincitamore/tui-blog-portfolio",
+    "link": "https://amore.build"
+  },
+  {
+    "id": "7",
+    "title": "Taildown Markup Language",
+    "description": "A revolutionary markup language that extends Markdown with plain English styling, interactive components, and zero-config interactivity. Write beautiful, responsive web applications using natural language while maintaining perfect readability. Includes a browser-based live editor.",
+    "technologies": [
+      "TypeScript",
+      "unified/remark/rehype",
+      "CodeMirror 6",
+      "Mermaid",
+      "Vitest"
+    ],
+    "github": "https://github.com/vincitamore/taildown",
+    "link": "https://taildown.dev"
+  },
+  {
+    "id": "2",
+    "title": "SCADA Command - Utility Operations Platform",
+    "description": "Enterprise-grade SCADA HMI replacement platform designed for a muncipal utility. Replaces 20+ fragmented legacy HMI screens with a unified, intelligent web-based interface for real-time industrial monitoring and control. Built for zero hardcoded configurations - 100% dynamically configurable.",
+    "technologies": [
+      "Next.js 15",
+      "NestJS 11",
+      "TimescaleDB",
+      "Modbus TCP/RTU",
+      "WebSocket",
+      "Apache ECharts"
+    ],
+    "github": null,
+    "link": null
+  },
+  {
+    "id": "6",
+    "title": "RouterOS Network Monitoring Portal",
+    "description": "A modern, responsive network monitoring and configuration dashboard for RouterOS devices using REST API integration with comprehensive HTTPS security implementation and enterprise-grade admin user management. Acts as central network monitoring and command point for many remote sites and equipment. Full browser SSH integration with multi-session management, full monitoring and logging of all devices.",
+    "technologies": [
+      "Next.js 15",
+      "TypeScript",
+      "Fastify",
+      "SQLite",
+      "WebSocket",
+      "SSH2",
+      "Recharts"
+    ],
+    "github": null,
+    "link": null
+  },
+  {
+    "id": "8",
+    "title": "Deployment Command Center",
+    "description": "Enterprise-grade deployment management CLI for multi-project environments with support for multi-environment workflows, automated server provisioning, and integrated monitoring dashboards. Features a beautiful React-based terminal UI with 7 different views.",
+    "technologies": [
+      "TypeScript",
+      "React (Ink)",
+      "Node.js",
+      "Commander.js",
+      "SSH2",
+      "Docker"
+    ],
+    "github": null,
+    "link": null
+  },
+  {
+    "id": "3",
+    "title": "Municipal Outage Management Suite",
+    "description": "An enterprise-grade system for real-time utility outage tracking and response coordination. Streamlines emergency response with interactive mapping and crew management capabilities, featuring an advanced feedback system for continuous service improvement.",
+    "technologies": [
+      "Next.js 14",
+      "TypeScript",
+      "PostgreSQL",
+      "Microsoft OAuth",
+      "Google Maps",
+      "Prisma"
+    ],
+    "github": null,
+    "link": null
+  },
+  {
+    "id": "4",
+    "title": "AI-Powered PDF Scanner App",
+    "description": "A sophisticated document processing solution that combines cutting-edge AI technology with a modern UI to streamline invoice management and requisition form generation. Leverages machine learning for intelligent document analysis with 90% reduction in processing time.",
+    "technologies": [
+      "Next.js 15",
+      "React 19",
+      "FastAPI",
+      "Ollama",
+      "llama3.2-vision",
+      "PDF.js"
+    ],
+    "github": null,
+    "link": null
+  },
+  {
+    "id": "5",
+    "title": "Bible RAG System (Scriptura)",
+    "description": "A comprehensive vector-embedded Bible database with AI-powered Retrieval-Augmented Generation capabilities for intelligent Bible study. Features semantic search, Strong's concordance integration, cross-reference analysis, and thematic analysis with 31K+ verses and 1800+ biblical themes.",
+    "technologies": [
+      "Next.js 15",
+      "Fastify",
+      "ChromaDB",
+      "Google Gemini",
+      "xAI Grok",
+      "SQLite"
+    ],
+    "github": null,
+    "link": null
+  },
+  {
+    "id": "9",
+    "title": "BONERBOTS AI Trading Arena",
+    "description": "A 24/7 autonomous AI trading simulation where multiple AI bots with unique personalities compete to maximize profits in cryptocurrency markets. Tests whether LLMs with specific personalities and strategies can consistently outperform the market.",
+    "technologies": [
+      "React",
+      "TypeScript",
+      "Express.js",
+      "SQLite",
+      "WebSocket",
+      "xAI Grok",
+      "Google Gemini"
+    ],
+    "github": null,
+    "link": "https://arena.bonerbots.com"
+  },
+  {
+    "id": "10",
+    "title": "Vehicle Management Suite",
+    "description": "A comprehensive, professional web application for complete vehicle fleet management, combining condition reports, document management, maintenance tracking, and full vehicle lifecycle administration. Enterprise-grade with mobile-optimized responsive design.",
+    "technologies": [
+      "Node.js",
+      "Express.js",
+      "SQLite3",
+      "PDFKit",
+      "Lucide Icons",
+      "Helmet.js"
+    ],
+    "github": null,
+    "link": null
+  },
+  {
+    "id": "12",
+    "title": "GrokMap - AI Chat Mindmap Visualization",
+    "description": "An interactive AI chat visualization dashboard that creates mindmaps from chat histories. Features streaming chat with Grok-2 and transforms conversations into explorable 3D mindmap structures with branching connections.",
+    "technologies": [
+      "Next.js 14",
+      "TypeScript",
+      "Prisma",
+      "Neon PostgreSQL",
+      "React Flow",
+      "xAI Grok"
+    ],
+    "github": null,
+    "link": null
+  },
+  {
+    "id": "13",
+    "title": "Agricultural Operations Platform",
+    "description": "A modern farm management solution that streamlines agricultural operations through intuitive field tracking, expense management, and inventory control systems. Features real-time metrics dashboard and role-based access control.",
+    "technologies": [
+      "Next.js 14",
+      "React",
+      "Tailwind CSS",
+      "PostgreSQL",
+      "Prisma",
+      "NextAuth.js"
+    ],
+    "github": null,
+    "link": null
+  }
+]

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>TUI Portfolio Blog</title>
+    <link>https://your-domain.com</link>
+    <description>A terminal-inspired blog about development and technology</description>
+    <language>en-us</language>
+    <lastBuildDate>Tue, 25 Nov 2025 13:19:13 GMT</lastBuildDate>
+    <atom:link href="https://your-domain.com/rss.xml" rel="self" type="application/rss+xml"/>
+    
+    <item>
+      <title>Welcome to the TUI Blog</title>
+      <link>https://your-domain.com/blog/welcome-to-tui-blog</link>
+      <guid isPermaLink="true">https://your-domain.com/blog/welcome-to-tui-blog</guid>
+      <description>An introduction to this terminal-inspired portfolio and blog. Learn about the tech stack and design philosophy.</description>
+      <pubDate>Tue, 25 Nov 2025 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Building Keyboard-First Navigation</title>
+      <link>https://your-domain.com/blog/building-keyboard-nav</link>
+      <guid isPermaLink="true">https://your-domain.com/blog/building-keyboard-nav</guid>
+      <description>How to create accessible, keyboard-driven navigation for web applications using XState and React hooks.</description>
+      <pubDate>Mon, 24 Nov 2025 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Achieving TUI Aesthetics on the Web</title>
+      <link>https://your-domain.com/blog/tui-aesthetics</link>
+      <guid isPermaLink="true">https://your-domain.com/blog/tui-aesthetics</guid>
+      <description>Design techniques for creating authentic terminal-style interfaces using modern CSS and web technologies.</description>
+      <pubDate>Sun, 23 Nov 2025 00:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>
