@@ -186,6 +186,37 @@ app.post('/api/portfolio/reorder', async (req, res) => {
   }
 });
 
+// ============ ADMIN PASSWORD ENDPOINTS ============
+
+// Default password hash for "password" - will be overwritten once changed
+const DEFAULT_HASH = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8';
+
+// Get current password hash (for client-side verification)
+app.get('/api/admin/hash', async (_req, res) => {
+  try {
+    const config = await readJsonFile<{ passwordHash?: string }>('admin.json', {});
+    res.json({ hash: config.passwordHash || DEFAULT_HASH });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to read config' });
+  }
+});
+
+// Update password hash
+app.put('/api/admin/password', async (req, res) => {
+  try {
+    const { hash } = req.body;
+    if (!hash || typeof hash !== 'string' || hash.length !== 64) {
+      return res.status(400).json({ error: 'Invalid hash format' });
+    }
+    const config = await readJsonFile<{ passwordHash?: string }>('admin.json', {});
+    config.passwordHash = hash;
+    await writeJsonFile('admin.json', config);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update password' });
+  }
+});
+
 // Start server
 const PORT = process.env.API_PORT || 3001;
 app.listen(PORT, () => {

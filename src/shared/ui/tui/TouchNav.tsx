@@ -53,7 +53,7 @@ const TouchNav: React.FC<TouchNavProps> = ({ actions, className = '' }) => {
               hover:brightness-125 active:scale-95
               disabled:opacity-50 disabled:cursor-not-allowed
               touch-manipulation
-              min-w-[44px] min-h-[44px]
+              min-h-[44px]
               flex items-center justify-center gap-1
             "
             style={{
@@ -63,7 +63,7 @@ const TouchNav: React.FC<TouchNavProps> = ({ actions, className = '' }) => {
             }}
           >
             <span className="opacity-70">[{action.key}]</span>
-            <span className="hidden sm:inline">{action.label}</span>
+            <span>{action.label}</span>
           </button>
         );
       })}

@@ -23,7 +23,7 @@ interface TuiEditorProps {
 
 /**
  * TUI-style editor component (nano-like interface)
- * Displays keybindings at bottom for ease of use
+ * Mobile-optimized with touch controls
  */
 const TuiEditor: React.FC<TuiEditorProps> = ({
   title,
@@ -41,6 +41,7 @@ const TuiEditor: React.FC<TuiEditorProps> = ({
   });
   const [activeField, setActiveField] = useState(0);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const textareaRefs = useRef<(HTMLTextAreaElement | HTMLInputElement | null)[]>([]);
 
   // Focus active field
@@ -53,28 +54,34 @@ const TuiEditor: React.FC<TuiEditorProps> = ({
     setHasChanges(true);
   }, []);
 
+  const handleSave = useCallback(() => {
+    // Validate required fields
+    const missingRequired = fields.filter(f => f.required && !data[f.name]?.trim());
+    if (missingRequired.length > 0) {
+      alert(`Please fill in: ${missingRequired.map(f => f.label).join(', ')}`);
+      return;
+    }
+    onSave(data);
+  }, [data, fields, onSave]);
+
+  const handleExit = useCallback(() => {
+    if (hasChanges) {
+      setShowExitConfirm(true);
+    } else {
+      onCancel();
+    }
+  }, [hasChanges, onCancel]);
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     // Ctrl+S to save
     if (e.ctrlKey && e.key === 's') {
       e.preventDefault();
-      // Validate required fields
-      const missingRequired = fields.filter(f => f.required && !data[f.name]?.trim());
-      if (missingRequired.length > 0) {
-        alert(`Please fill in: ${missingRequired.map(f => f.label).join(', ')}`);
-        return;
-      }
-      onSave(data);
+      handleSave();
     }
-    // Ctrl+X to cancel/exit
-    if (e.ctrlKey && e.key === 'x') {
+    // Ctrl+X or Escape to cancel/exit
+    if ((e.ctrlKey && e.key === 'x') || e.key === 'Escape') {
       e.preventDefault();
-      if (hasChanges) {
-        if (confirm('Discard unsaved changes?')) {
-          onCancel();
-        }
-      } else {
-        onCancel();
-      }
+      handleExit();
     }
     // Ctrl+Down or Tab to next field
     if ((e.ctrlKey && e.key === 'ArrowDown') || (e.key === 'Tab' && !e.shiftKey)) {
@@ -86,7 +93,7 @@ const TuiEditor: React.FC<TuiEditorProps> = ({
       e.preventDefault();
       setActiveField(prev => Math.max(0, prev - 1));
     }
-  }, [data, fields, hasChanges, onCancel, onSave]);
+  }, [fields.length, handleExit, handleSave]);
 
   return (
     <div
@@ -96,19 +103,64 @@ const TuiEditor: React.FC<TuiEditorProps> = ({
     >
       {/* Title bar */}
       <div
-        className="flex items-center justify-between px-4 py-2 border-b"
+        className="flex items-center justify-between px-3 sm:px-4 py-2 border-b shrink-0"
         style={{ borderColor: 'var(--term-border)', backgroundColor: 'var(--term-selection)' }}
       >
-        <span style={{ color: 'var(--term-primary)' }}>
-          TUI Editor - {title}
+        <span className="text-sm sm:text-base truncate" style={{ color: 'var(--term-primary)' }}>
+          {title}
         </span>
-        <span style={{ color: 'var(--term-muted)' }}>
+        <span className="text-xs sm:text-sm" style={{ color: 'var(--term-muted)' }}>
           {hasChanges ? '[Modified]' : '[Saved]'}
         </span>
       </div>
 
+      {/* Exit confirmation modal */}
+      {showExitConfirm && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute inset-0 flex items-center justify-center z-50"
+          style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}
+        >
+          <div
+            className="p-4 sm:p-6 max-w-sm w-full mx-4"
+            style={{
+              backgroundColor: 'var(--term-background)',
+              border: '1px solid var(--term-border)',
+            }}
+          >
+            <p className="mb-4" style={{ color: 'var(--term-foreground)' }}>
+              Discard unsaved changes?
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={onCancel}
+                className="flex-1 px-4 py-3 text-sm font-medium min-h-[44px] touch-manipulation"
+                style={{
+                  backgroundColor: 'var(--term-error)',
+                  color: 'var(--term-background)',
+                }}
+              >
+                Yes, Discard
+              </button>
+              <button
+                onClick={() => setShowExitConfirm(false)}
+                className="flex-1 px-4 py-3 text-sm font-medium min-h-[44px] touch-manipulation"
+                style={{
+                  backgroundColor: 'var(--term-selection)',
+                  color: 'var(--term-foreground)',
+                  border: '1px solid var(--term-border)',
+                }}
+              >
+                Keep Editing
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Editor content */}
-      <div className="flex-1 overflow-auto p-4 space-y-4">
+      <div className="flex-1 overflow-auto p-3 sm:p-4 space-y-4">
         {fields.map((field, index) => (
           <motion.div
             key={field.name}
@@ -131,12 +183,13 @@ const TuiEditor: React.FC<TuiEditorProps> = ({
                 onChange={e => handleChange(field.name, e.target.value)}
                 onFocus={() => setActiveField(index)}
                 placeholder={field.placeholder}
-                rows={10}
-                className="w-full p-2 font-mono text-sm resize-none outline-none"
+                rows={8}
+                className="w-full p-3 font-mono text-sm resize-none outline-none touch-manipulation"
                 style={{
                   backgroundColor: 'var(--term-background)',
                   color: 'var(--term-foreground)',
                   border: `1px solid ${index === activeField ? 'var(--term-primary)' : 'var(--term-border)'}`,
+                  fontSize: '16px', // Prevents iOS zoom on focus
                 }}
                 spellCheck={false}
               />
@@ -148,11 +201,12 @@ const TuiEditor: React.FC<TuiEditorProps> = ({
                 onChange={e => handleChange(field.name, e.target.value)}
                 onFocus={() => setActiveField(index)}
                 placeholder={field.placeholder}
-                className="w-full p-2 font-mono text-sm outline-none"
+                className="w-full p-3 font-mono text-sm outline-none touch-manipulation"
                 style={{
                   backgroundColor: 'var(--term-background)',
                   color: 'var(--term-foreground)',
                   border: `1px solid ${index === activeField ? 'var(--term-primary)' : 'var(--term-border)'}`,
+                  fontSize: '16px', // Prevents iOS zoom on focus
                 }}
                 spellCheck={false}
               />
@@ -166,28 +220,64 @@ const TuiEditor: React.FC<TuiEditorProps> = ({
         ))}
       </div>
 
-      {/* Keybindings bar (nano-style) */}
+      {/* Touch-friendly action bar */}
       <div
-        className="border-t px-2 py-1"
+        className="border-t p-2 shrink-0"
         style={{ borderColor: 'var(--term-border)', backgroundColor: 'var(--term-selection)' }}
       >
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-          <span>
-            <span style={{ color: 'var(--term-primary)' }}>^S</span>
-            <span style={{ color: 'var(--term-muted)' }}> Save</span>
-          </span>
-          <span>
-            <span style={{ color: 'var(--term-primary)' }}>^X</span>
-            <span style={{ color: 'var(--term-muted)' }}> Exit</span>
-          </span>
-          <span>
-            <span style={{ color: 'var(--term-primary)' }}>Tab</span>
-            <span style={{ color: 'var(--term-muted)' }}> Next Field</span>
-          </span>
-          <span>
-            <span style={{ color: 'var(--term-primary)' }}>Shift+Tab</span>
-            <span style={{ color: 'var(--term-muted)' }}> Prev Field</span>
-          </span>
+        {/* Touch buttons */}
+        <div className="flex gap-2 mb-2">
+          <button
+            onClick={handleSave}
+            className="flex-1 px-4 py-3 text-sm font-medium min-h-[44px] touch-manipulation flex items-center justify-center gap-2"
+            style={{
+              backgroundColor: 'var(--term-primary)',
+              color: 'var(--term-background)',
+            }}
+          >
+            <span>[^S]</span>
+            <span>Save</span>
+          </button>
+          <button
+            onClick={handleExit}
+            className="flex-1 px-4 py-3 text-sm font-medium min-h-[44px] touch-manipulation flex items-center justify-center gap-2"
+            style={{
+              backgroundColor: 'var(--term-selection)',
+              color: 'var(--term-foreground)',
+              border: '1px solid var(--term-border)',
+            }}
+          >
+            <span>[^X]</span>
+            <span>Exit</span>
+          </button>
+        </div>
+        
+        {/* Field navigation for mobile */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveField(prev => Math.max(0, prev - 1))}
+            disabled={activeField === 0}
+            className="flex-1 px-3 py-2 text-sm font-medium min-h-[44px] touch-manipulation disabled:opacity-50"
+            style={{
+              backgroundColor: 'var(--term-background)',
+              color: 'var(--term-muted)',
+              border: '1px solid var(--term-border)',
+            }}
+          >
+            [↑] Prev Field
+          </button>
+          <button
+            onClick={() => setActiveField(prev => Math.min(fields.length - 1, prev + 1))}
+            disabled={activeField === fields.length - 1}
+            className="flex-1 px-3 py-2 text-sm font-medium min-h-[44px] touch-manipulation disabled:opacity-50"
+            style={{
+              backgroundColor: 'var(--term-background)',
+              color: 'var(--term-muted)',
+              border: '1px solid var(--term-border)',
+            }}
+          >
+            [↓] Next Field
+          </button>
         </div>
       </div>
     </div>
@@ -195,5 +285,3 @@ const TuiEditor: React.FC<TuiEditorProps> = ({
 };
 
 export default TuiEditor;
-
-

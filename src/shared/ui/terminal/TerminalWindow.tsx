@@ -5,6 +5,7 @@ interface TerminalWindowProps {
   title?: string;
   children: React.ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 /**
@@ -15,6 +16,7 @@ const TerminalWindow: React.FC<TerminalWindowProps> = ({
   title = 'visitor@amore.build',
   children,
   className = '',
+  style = {},
 }) => {
   return (
     <motion.div
@@ -32,6 +34,7 @@ const TerminalWindow: React.FC<TerminalWindowProps> = ({
           0 0 80px -20px var(--term-primary)
         `,
         transform: 'perspective(1000px)',
+        ...style,
       }}
     >
       {/* Title bar with glass effect */}

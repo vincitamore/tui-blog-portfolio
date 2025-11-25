@@ -11,7 +11,7 @@ import { Terminal, TerminalWindow } from '../shared/ui/terminal';
 import type { TerminalLine } from '../shared/ui/terminal';
 import { parseCommand, getWelcomeMessage } from '../shared/lib/commands';
 import { initTheme, applyTheme, themes, getStoredTheme } from '../shared/lib/themes';
-import { verifyAdminPassword, isAdmin, setAdminSession, logoutAdmin } from '../shared/lib/auth';
+import { verifyAdminPassword, isAdmin, setAdminSession, logoutAdmin, changeAdminPassword } from '../shared/lib/auth';
 import PortfolioApp from '../features/portfolio/ui/PortfolioApp';
 import BlogApp from '../features/blog/ui/BlogApp';
 import AboutApp from '../features/about/ui/AboutApp';
@@ -31,6 +31,15 @@ const App: React.FC = () => {
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const passwordInputRef = useRef<HTMLInputElement>(null);
+  
+  // Password change state
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [currentPasswordInput, setCurrentPasswordInput] = useState('');
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
+  const [passwordChangeError, setPasswordChangeError] = useState('');
+  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
+  const currentPasswordRef = useRef<HTMLInputElement>(null);
 
   // Initialize theme on mount
   useEffect(() => {
@@ -45,6 +54,13 @@ const App: React.FC = () => {
       passwordInputRef.current.focus();
     }
   }, [showPasswordPrompt]);
+
+  // Focus current password input when change prompt shows
+  useEffect(() => {
+    if (showPasswordChange && currentPasswordRef.current) {
+      currentPasswordRef.current.focus();
+    }
+  }, [showPasswordChange]);
 
   // Add a line to the terminal
   const addLine = useCallback((line: Omit<TerminalLine, 'id'>) => {
@@ -94,6 +110,45 @@ const App: React.FC = () => {
     }
   }, [passwordInput, handleAdminLogin]);
 
+  // Handle password change submission
+  const handlePasswordChangeSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordChangeError('');
+    setPasswordChangeSuccess(false);
+    
+    // Validate inputs
+    if (!currentPasswordInput || !newPasswordInput || !confirmPasswordInput) {
+      setPasswordChangeError('All fields are required');
+      return;
+    }
+    
+    if (newPasswordInput !== confirmPasswordInput) {
+      setPasswordChangeError('New passwords do not match');
+      return;
+    }
+    
+    if (newPasswordInput.length < 6) {
+      setPasswordChangeError('New password must be at least 6 characters');
+      return;
+    }
+    
+    const result = await changeAdminPassword(currentPasswordInput, newPasswordInput);
+    if (result.success) {
+      setPasswordChangeSuccess(true);
+      setCurrentPasswordInput('');
+      setNewPasswordInput('');
+      setConfirmPasswordInput('');
+      // Close after short delay
+      setTimeout(() => {
+        setShowPasswordChange(false);
+        setPasswordChangeSuccess(false);
+        addLine({ type: 'success', content: 'Password changed successfully' });
+      }, 1500);
+    } else {
+      setPasswordChangeError(result.error || 'Failed to change password');
+    }
+  }, [currentPasswordInput, newPasswordInput, confirmPasswordInput, addLine]);
+
   // Handle command execution
   const handleCommand = useCallback(
     async (command: string) => {
@@ -119,6 +174,11 @@ const App: React.FC = () => {
             // Check for admin login trigger
             if (result.target === 'admin_login') {
               setShowPasswordPrompt(true);
+              break;
+            }
+            // Check for password change trigger
+            if (result.target === 'password_change') {
+              setShowPasswordChange(true);
               break;
             }
             if (result.lines) {
@@ -268,6 +328,138 @@ const App: React.FC = () => {
     </motion.div>
   );
 
+  // Password change modal
+  const PasswordChangeModal = showPasswordChange && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="absolute inset-0 flex items-center justify-center z-50"
+      style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="p-4 sm:p-6 max-w-sm w-full mx-4"
+        style={{
+          backgroundColor: 'var(--term-background)',
+          border: '1px solid var(--term-border)',
+        }}
+      >
+        <div className="text-center mb-4">
+          <div style={{ color: 'var(--term-primary)' }} className="text-lg font-bold mb-1">
+            passwd
+          </div>
+          <div style={{ color: 'var(--term-muted)' }} className="text-sm">
+            Change admin password
+          </div>
+        </div>
+        
+        {passwordChangeSuccess ? (
+          <div className="text-center py-4" style={{ color: 'var(--term-success)' }}>
+            Password changed successfully!
+          </div>
+        ) : (
+          <form onSubmit={handlePasswordChangeSubmit}>
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="block text-xs mb-1" style={{ color: 'var(--term-muted)' }}>
+                  Current Password
+                </label>
+                <input
+                  ref={currentPasswordRef}
+                  type="password"
+                  value={currentPasswordInput}
+                  onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                  className="w-full p-2 bg-transparent outline-none font-mono text-sm"
+                  style={{
+                    color: 'var(--term-foreground)',
+                    border: '1px solid var(--term-border)',
+                    fontSize: '16px',
+                  }}
+                  placeholder="Current password"
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <label className="block text-xs mb-1" style={{ color: 'var(--term-muted)' }}>
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  value={newPasswordInput}
+                  onChange={(e) => setNewPasswordInput(e.target.value)}
+                  className="w-full p-2 bg-transparent outline-none font-mono text-sm"
+                  style={{
+                    color: 'var(--term-foreground)',
+                    border: '1px solid var(--term-border)',
+                    fontSize: '16px',
+                  }}
+                  placeholder="New password (min 6 chars)"
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <label className="block text-xs mb-1" style={{ color: 'var(--term-muted)' }}>
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  value={confirmPasswordInput}
+                  onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                  className="w-full p-2 bg-transparent outline-none font-mono text-sm"
+                  style={{
+                    color: 'var(--term-foreground)',
+                    border: '1px solid var(--term-border)',
+                    fontSize: '16px',
+                  }}
+                  placeholder="Confirm new password"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+            
+            {passwordChangeError && (
+              <div className="text-sm mb-4" style={{ color: 'var(--term-error)' }}>
+                {passwordChangeError}
+              </div>
+            )}
+            
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPasswordChange(false);
+                  setCurrentPasswordInput('');
+                  setNewPasswordInput('');
+                  setConfirmPasswordInput('');
+                  setPasswordChangeError('');
+                }}
+                className="flex-1 px-3 py-2 text-sm min-h-[44px] touch-manipulation"
+                style={{
+                  color: 'var(--term-muted)',
+                  border: '1px solid var(--term-border)',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-3 py-2 text-sm min-h-[44px] touch-manipulation"
+                style={{
+                  color: 'var(--term-background)',
+                  backgroundColor: 'var(--term-primary)',
+                }}
+              >
+                Change Password
+              </button>
+            </div>
+          </form>
+        )}
+      </motion.div>
+    </motion.div>
+  );
+
   // Render current screen
   const renderScreen = () => {
     switch (currentScreen) {
@@ -338,7 +530,7 @@ const App: React.FC = () => {
 
   return (
     <div
-      className="h-screen w-screen p-4 md:p-8 lg:p-12 flex items-center justify-center"
+      className="h-dvh w-screen p-2 sm:p-4 md:p-8 lg:p-12 flex items-center justify-center overflow-hidden fixed inset-0"
       style={{
         background: `
           radial-gradient(ellipse at top, color-mix(in srgb, var(--term-primary) 8%, var(--term-background)) 0%, transparent 50%),
@@ -357,10 +549,12 @@ const App: React.FC = () => {
 
       <TerminalWindow
         title={`${adminMode ? 'admin' : 'visitor'}@amore.build:~/${currentScreen === 'terminal' ? '' : currentScreen}`}
-        className="w-full h-full max-w-6xl max-h-[90vh] relative z-10"
+        className="w-full max-w-6xl relative z-10"
+        style={{ height: 'calc(100dvh - 1rem)', maxHeight: 'calc(100dvh - 1rem)' }}
       >
         <AnimatePresence mode="wait">{renderScreen()}</AnimatePresence>
         <AnimatePresence>{PasswordPrompt}</AnimatePresence>
+        <AnimatePresence>{PasswordChangeModal}</AnimatePresence>
       </TerminalWindow>
 
       {/* Status indicators */}

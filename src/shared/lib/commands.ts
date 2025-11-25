@@ -17,6 +17,7 @@ export interface CommandContext {
   isAdmin?: boolean;
   onAdminLogin?: () => void;
   onAdminLogout?: () => void;
+  onPasswordChange?: () => void;
 }
 
 export interface CommandHandler {
@@ -65,6 +66,7 @@ const commands: Record<string, CommandHandler> = {
         ...(context?.isAdmin ? [
           '',
           'Admin commands:',
+          '  passwd            Change admin password',
           '  logout            Exit admin session',
         ] : []),
         '',
@@ -212,6 +214,17 @@ const commands: Record<string, CommandHandler> = {
   exit: {
     description: 'Exit admin session (alias for logout)',
     execute: (args, context) => commands.logout.execute(args, context),
+  },
+
+  passwd: {
+    description: 'Change admin password',
+    execute: (_args, context) => {
+      if (!context?.isAdmin) {
+        return { type: 'error', content: 'Permission denied. Must be admin to change password.' };
+      }
+      // Signal to trigger password change prompt
+      return { type: 'output', target: 'password_change', content: '' };
+    },
   },
 
   neofetch: {
