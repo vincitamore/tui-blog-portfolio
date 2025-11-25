@@ -206,6 +206,11 @@ const App: React.FC = () => {
               addLine({ type: 'neofetch' as any, content: result.content || '{}' });
               break;
             }
+            // Check for skills (special responsive rendering)
+            if (result.target === 'skills') {
+              addLine({ type: 'skills' as any, content: '' });
+              break;
+            }
             if (result.lines) {
               addLines(result.lines, 'output');
             } else if (result.content) {

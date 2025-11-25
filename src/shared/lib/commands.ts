@@ -264,20 +264,8 @@ const commands: Record<string, CommandHandler> = {
     description: 'List technical skills',
     execute: () => ({
       type: 'output',
-      lines: [
-        '',
-        'Technical Skills:',
-        '',
-        '  Network       Fiber Optics (CFOT), SCADA Networks, Wireless, IT/OT Integration',
-        '  Linux/DevOps  Ubuntu/Debian/RHEL, Docker, Nginx, CI/CD, Bash',
-        '  System Admin  Active Directory, Azure AD, Windows Server, VMware, PowerShell',
-        '  Security      EDR/XDR, Security Onion, OT/ICS Security, SIEM',
-        '  AI            Anthropic/Claude, xAI/Grok, Google Gemini, Ollama, RAG Systems',
-        '  Development   TypeScript, React, Next.js, Python, Node.js',
-        '  Databases     PostgreSQL, SQL Server, TimescaleDB, SQLite, ChromaDB',
-        '  Industrial    PLC Programming, Industrial Control, VMware HA Clusters, Automation',
-        '',
-      ],
+      target: 'skills',
+      content: '',
     }),
   },
 

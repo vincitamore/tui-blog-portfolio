@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export interface TerminalLine {
   id: string;
-  type: 'command' | 'output' | 'error' | 'info' | 'success' | 'neofetch';
+  type: 'command' | 'output' | 'error' | 'info' | 'success' | 'neofetch' | 'skills';
   content: string;
   timestamp?: Date;
 }
@@ -69,6 +69,55 @@ const NeofetchOutput: React.FC<{ theme: string }> = ({ theme }) => {
   );
 };
 
+// Skills data for the table - category must be exactly 12 chars, skills exactly 47 chars
+const SKILLS_DATA = [
+  { category: 'Network     ', skills: 'Fiber (CFOT), SCADA, Wireless, IT/OT            ' },
+  { category: 'Linux/DevOps', skills: 'Ubuntu/Debian/RHEL, Docker, Nginx, CI/CD, Bash  ' },
+  { category: 'Sys Admin   ', skills: 'AD, Azure AD, Windows Server, VMware, PowerShell' },
+  { category: 'Security    ', skills: 'EDR/XDR, Security Onion, OT/ICS Security, SIEM  ' },
+  { category: 'AI          ', skills: 'Claude, Grok, Gemini, Ollama, RAG Systems       ' },
+  { category: 'Development ', skills: 'TypeScript, React, Next.js, Python, Node.js     ' },
+  { category: 'Databases   ', skills: 'PostgreSQL, SQL Server, TimescaleDB, ChromaDB   ' },
+  { category: 'Industrial  ', skills: 'PLC Programming, Control Systems, VMware HA     ' },
+];
+
+// Responsive Skills table component - slightly smaller than experience timeline
+const SkillsOutput: React.FC = () => {
+  return (
+    <div className="overflow-hidden my-2">
+      <div
+        className="text-[9px] xs:text-[10px] sm:text-[12px] md:text-[13px] lg:text-sm leading-tight whitespace-pre font-mono"
+        style={{ width: 'fit-content' }}
+      >
+        {/* Table header */}
+        <div style={{ color: 'var(--term-muted)' }}>┌──────────────┬─────────────────────────────────────────────────┐</div>
+        <div>
+          <span style={{ color: 'var(--term-muted)' }}>│ </span>
+          <span style={{ color: 'var(--term-accent)' }}>CATEGORY    </span>
+          <span style={{ color: 'var(--term-muted)' }}> │ </span>
+          <span style={{ color: 'var(--term-accent)' }}>SKILLS                                          </span>
+          <span style={{ color: 'var(--term-muted)' }}>│</span>
+        </div>
+        <div style={{ color: 'var(--term-muted)' }}>├──────────────┼─────────────────────────────────────────────────┤</div>
+        
+        {/* Table rows */}
+        {SKILLS_DATA.map((row, i) => (
+          <div key={i}>
+            <span style={{ color: 'var(--term-muted)' }}>│ </span>
+            <span style={{ color: 'var(--term-primary)' }}>{row.category}</span>
+            <span style={{ color: 'var(--term-muted)' }}> │ </span>
+            <span style={{ color: 'var(--term-foreground)' }}>{row.skills}</span>
+            <span style={{ color: 'var(--term-muted)' }}>│</span>
+          </div>
+        ))}
+        
+        {/* Table footer */}
+        <div style={{ color: 'var(--term-muted)' }}>└──────────────┴─────────────────────────────────────────────────┘</div>
+      </div>
+    </div>
+  );
+};
+
 interface TerminalProps {
   lines: TerminalLine[];
   prompt?: string;
@@ -86,29 +135,37 @@ const CLICKABLE_COMMANDS = [
   'theme', 'whoami', 'clear', 'cls', 'neofetch', 'contact', 'skills', 'cat'
 ];
 
-// Parse a line and make commands clickable
+// Theme names that should be clickable (will run "theme <name>")
+const CLICKABLE_THEMES = [
+  'matrix', 'dracula', 'monokai', 'nord', 'tokyonight', 'gruvbox', 'synthwave',
+  'catppuccin', 'solarized', 'onedark', 'nightowl', 'rosepine', 'everforest',
+  'kanagawa', 'palenight', 'horizon', 'cobalt', 'ayu', 'amber', 'github', 'vscode', 'oceanicnext'
+];
+
+// Parse a line and make commands/themes clickable
 const renderClickableOutput = (
   content: string,
   onCommandClick: (cmd: string) => void
 ): React.ReactNode => {
-  // Pattern to match commands at the start of lines (with optional leading spaces)
-  // Matches: "  help  ", "portfolio", "cd <section>", etc.
   const parts: React.ReactNode[] = [];
   const lines = content.split('\n');
   
   lines.forEach((line, lineIdx) => {
     if (lineIdx > 0) parts.push('\n');
     
-    // Check if this line contains a clickable command
-    let foundCommand = false;
+    let foundMatch = false;
+    
+    // Check for commands in help listing format: "  command  " or "  cmd, cmd2  " or "  cmd <arg>  "
+    // Must start with 2 spaces, then command, then either comma, space+special char, or 2+ spaces
     for (const cmd of CLICKABLE_COMMANDS) {
-      // Match command at start of line (with whitespace) or as standalone word
-      const regex = new RegExp(`^(\\s*)(${cmd})(\\s|$|,)`, 'i');
+      // Match: 2 spaces, command, then (comma OR 2+ spaces OR space+[ OR space+<)
+      const regex = new RegExp(`^(  )(${cmd})(,| {2,}| \\[| <)`, 'i');
       const match = line.match(regex);
       if (match) {
         const beforeCmd = match[1];
         const cmdText = match[2];
-        const afterMatch = line.slice(match[0].length - (match[3]?.length || 0));
+        const afterCmd = match[3];
+        const rest = line.slice(match[0].length);
         
         parts.push(beforeCmd);
         parts.push(
@@ -124,13 +181,48 @@ const renderClickableOutput = (
             {cmdText}
           </button>
         );
-        parts.push(afterMatch);
-        foundCommand = true;
+        parts.push(afterCmd);
+        parts.push(rest);
+        foundMatch = true;
         break;
       }
     }
     
-    if (!foundCommand) {
+    // Check for theme names - ONLY lowercase exact matches (excludes "GitHub" but matches "github")
+    if (!foundMatch) {
+      for (const themeName of CLICKABLE_THEMES) {
+        // Must be exactly lowercase, with 2 leading spaces and 2+ trailing spaces
+        const regex = new RegExp(`^(  )(${themeName})(\\s{2,})(.*)$`);
+        const match = line.match(regex);
+        if (match && match[2] === themeName) { // Ensure exact case match
+          const beforeTheme = match[1];
+          const themeText = match[2];
+          const spacing = match[3];
+          const label = match[4];
+          
+          parts.push(beforeTheme);
+          parts.push(
+            <button
+              key={`${lineIdx}-theme-${themeName}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onCommandClick(`theme ${themeText}`);
+              }}
+              className="underline decoration-dotted hover:decoration-solid cursor-pointer touch-manipulation"
+              style={{ color: 'var(--term-accent)' }}
+            >
+              {themeText}
+            </button>
+          );
+          parts.push(spacing);
+          parts.push(label);
+          foundMatch = true;
+          break;
+        }
+      }
+    }
+    
+    if (!foundMatch) {
       parts.push(line);
     }
   });
@@ -311,7 +403,7 @@ const Terminal: React.FC<TerminalProps> = ({
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.15 }}
-              className={line.type === 'neofetch' ? '' : `whitespace-pre-wrap break-words ${getLineColor(line.type)}`}
+              className={line.type === 'neofetch' || line.type === 'skills' ? '' : `whitespace-pre-wrap break-words ${getLineColor(line.type)}`}
             >
               {line.type === 'command' && (
                 <span className="text-[var(--term-muted)]">
@@ -331,6 +423,8 @@ const Terminal: React.FC<TerminalProps> = ({
                     return 'dracula';
                   }
                 })()} />
+              ) : line.type === 'skills' ? (
+                <SkillsOutput />
               ) : line.type === 'output' ? (
                 renderClickableOutput(line.content, onCommand)
               ) : (
