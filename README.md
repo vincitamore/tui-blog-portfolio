@@ -1,6 +1,8 @@
-# TUI Blog Portfolio
+# AMORE.BUILD
 
-> A terminal-style portfolio and blog web application that looks and feels like a real terminal. Built with React, TypeScript, Vite, TailwindCSS, and XState for an authentic command-line experience in the browser.
+> *"Qui vincit, vincit amore"* — He who conquers, conquers by love
+
+A terminal-style portfolio and blog web application that looks and feels like a real terminal. Built with React, TypeScript, Vite, TailwindCSS, and XState for an authentic command-line experience in the browser.
 
 [![Live Demo](https://img.shields.io/badge/demo-amore.build-bd93f9?style=for-the-badge)](https://amore.build)
 [![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)](https://reactjs.org)
@@ -9,7 +11,9 @@
 
 ## Overview
 
-TUI Blog Portfolio is an interactive, terminal-emulating web application that showcases projects, blog posts, and personal information through a nostalgic command-line interface. Users interact via typed commands or clickable elements, navigate with keyboard shortcuts, and experience authentic terminal aesthetics complete with blinking cursors, customizable themes, and a 3D window effect.
+AMORE.BUILD is an interactive, terminal-emulating web application that showcases projects, blog posts, and professional information through a nostalgic command-line interface. Users interact via typed commands or clickable elements, navigate with keyboard shortcuts, and experience authentic terminal aesthetics complete with blinking cursors, 23 customizable themes, and a floating 3D window effect.
+
+On first load, the terminal auto-types `help` to introduce visitors to available commands—all of which are clickable for touch-friendly navigation.
 
 **Live Demo**: [amore.build](https://amore.build)
 
@@ -17,22 +21,26 @@ TUI Blog Portfolio is an interactive, terminal-emulating web application that sh
 
 ### Terminal Experience
 - **Real Terminal Feel**: Command input with blinking cursor, command history (↑/↓), and authentic prompt styling
-- **23 Color Themes**: Including Dracula (default), Matrix, Monokai, Nord, Tokyo Night, Gruvbox, Catppuccin, Rosé Pine, and more
+- **Auto-Type Introduction**: Terminal types and executes `help` on first load
+- **Clickable Commands**: Commands in help output are clickable/touchable for easy navigation
+- **23 Color Themes**: Including Dracula (default), Matrix, Monokai, Nord, Tokyo Night, Gruvbox, Catppuccin, Rosé Pine, and more—all clickable in the theme list
 - **3D Window Effect**: Floating terminal window with macOS-style controls and ambient glow
-- **Responsive Design**: Works on desktop and mobile with touch support
+- **Mobile Optimized**: Touch-friendly navigation, smart keyboard handling, responsive ASCII art
 
 ### Commands
+All commands are clickable in the help output for touch-friendly navigation:
+
 ```bash
-help              # Show all available commands
+help              # Show all available commands (auto-runs on first load)
 ls, dir           # List available sections
 cd <section>      # Navigate to portfolio, blog, or about
 portfolio         # Open portfolio viewer
 blog              # Open blog reader
-about             # View about page
-theme [name]      # Change or list themes (23 available!)
-neofetch          # Display system information
+about             # View about page with ASCII experience timeline
+theme [name]      # Change or list themes (23 clickable themes!)
+neofetch          # Display system information with ASCII art
 contact           # Show contact information
-skills            # List technical skills
+skills            # List technical skills (responsive ASCII table)
 clear, cls        # Clear terminal
 ```
 
@@ -50,30 +58,67 @@ Login with `sudo admin` to unlock:
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Terminal Window                          │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │  visitor@amore.build:~$                                   │  │
-│  │                                                           │  │
-│  │  ╔═══════════════════════════════════════════════════╗   │  │
-│  │  ║  AMORE.BUILD - Welcome to my terminal portfolio   ║   │  │
-│  │  ╚═══════════════════════════════════════════════════╝   │  │
-│  │                                                           │  │
-│  │  > portfolio    blog    about                             │  │
-│  │                                                           │  │
-│  └───────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                            App.tsx (Main Router)                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│   ┌──────────────────────────────────────────────────────────────────┐  │
+│   │                    TerminalWindow (3D Shell)                      │  │
+│   │  ┌────────────────────────────────────────────────────────────┐  │  │
+│   │  │                                                            │  │  │
+│   │  │   ┌─────────────────────────────────────────────────────┐ │  │  │
+│   │  │   │  AMORE.BUILD ASCII Banner + Welcome Message         │ │  │  │
+│   │  │   └─────────────────────────────────────────────────────┘ │  │  │
+│   │  │                                                            │  │  │
+│   │  │   visitor@amore.build:~$ help                              │  │  │
+│   │  │   > portfolio  blog  about  theme  skills  neofetch        │  │  │
+│   │  │                          (clickable)                       │  │  │
+│   │  │                                                            │  │  │
+│   │  │   visitor@amore.build:~$ █                                 │  │  │
+│   │  │                                                            │  │  │
+│   │  └────────────────────────────────────────────────────────────┘  │  │
+│   │                         Terminal.tsx                              │  │
+│   └──────────────────────────────────────────────────────────────────┘  │
+│                                    │                                     │
+│         ┌──────────────────────────┼──────────────────────────┐         │
+│         ▼                          ▼                          ▼         │
+│   ┌──────────┐              ┌──────────┐              ┌──────────┐      │
+│   │Portfolio │              │   Blog   │              │  About   │      │
+│   │  App     │              │   App    │              │   App    │      │
+│   │          │              │          │              │          │      │
+│   │ Projects │              │  Posts   │              │ Bio/     │      │
+│   │ Gallery  │              │  Reader  │              │ Skills/  │      │
+│   │ + Admin  │              │ + Admin  │              │ Contact  │      │
+│   └──────────┘              └──────────┘              └──────────┘      │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+
+                    ┌─────────────────────────────────┐
+                    │         Shared Services          │
+                    ├─────────────────────────────────┤
+                    │  commands.ts  │  Command Parser  │
+                    │  themes.ts    │  23 Theme Defs   │
+                    │  auth.ts      │  Admin Auth      │
+                    │  api.ts       │  REST Client     │
+                    └─────────────────────────────────┘
+                                    │
+                                    ▼
+                    ┌─────────────────────────────────┐
+                    │       Express.js API Server      │
+                    │    (JSON file-based storage)     │
+                    └─────────────────────────────────┘
 ```
 
 ### Tech Stack
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | React 18, TypeScript, Vite |
+| Frontend | React 18, TypeScript, Vite, PWA |
 | Styling | TailwindCSS, CSS Variables, Framer Motion |
 | State | XState FSM, React Hooks |
 | Backend | Express.js, JSON file storage |
-| Fonts | Cascadia Mono |
+| Fonts | System Monospace / Cascadia Mono |
+| Mobile | Touch detection, responsive ASCII, smart keyboard handling |
 
 ## Quick Start
 
@@ -189,8 +234,9 @@ Switch themes with `theme <name>`:
 | DELETE | `/api/portfolio/:id` | Delete project |
 | POST | `/api/portfolio/reorder` | Reorder projects |
 
-## Keyboard Navigation
+## Navigation
 
+### Keyboard (Desktop)
 | Key | Action |
 |-----|--------|
 | `↑` / `k` | Navigate up |
@@ -200,6 +246,14 @@ Switch themes with `theme <name>`:
 | `Tab` | Next field (editor) |
 | `Ctrl+S` | Save (editor) |
 | `Ctrl+X` | Exit (editor) |
+
+### Touch (Mobile)
+| Action | Effect |
+|--------|--------|
+| Tap command | Execute command (no keyboard popup) |
+| Tap theme name | Switch to that theme |
+| Tap input field | Open keyboard to type |
+| Touch nav bar | Quick access to common actions |
 
 ## Contributing
 
