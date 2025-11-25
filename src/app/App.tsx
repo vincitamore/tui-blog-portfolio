@@ -21,6 +21,35 @@ type AppScreen = 'terminal' | 'portfolio' | 'blog' | 'about';
 let lineIdCounter = 0;
 const generateLineId = () => `line-${++lineIdCounter}`;
 
+// Detect in-app browsers (Twitter, Facebook, Instagram, etc.) that have bottom navigation bars
+const detectInAppBrowser = (): { isInApp: boolean; extraPadding: number } => {
+  if (typeof window === 'undefined') return { isInApp: false, extraPadding: 0 };
+  
+  const ua = navigator.userAgent.toLowerCase();
+  
+  // Twitter in-app browser
+  if (ua.includes('twitter') || ua.includes('x.com')) {
+    return { isInApp: true, extraPadding: 120 }; // Twitter has ~120px bottom bar
+  }
+  
+  // Facebook in-app browser
+  if (ua.includes('fban') || ua.includes('fbav') || ua.includes('facebook')) {
+    return { isInApp: true, extraPadding: 100 };
+  }
+  
+  // Instagram in-app browser
+  if (ua.includes('instagram')) {
+    return { isInApp: true, extraPadding: 100 };
+  }
+  
+  // LinkedIn in-app browser
+  if (ua.includes('linkedin')) {
+    return { isInApp: true, extraPadding: 80 };
+  }
+  
+  return { isInApp: false, extraPadding: 0 };
+};
+
 const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('terminal');
   const [lines, setLines] = useState<TerminalLine[]>([]);
@@ -33,6 +62,7 @@ const App: React.FC = () => {
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const [autoTypeCommand, setAutoTypeCommand] = useState<string | undefined>(undefined);
   const [hasAutoTyped, setHasAutoTyped] = useState(false);
+  const [inAppPadding, setInAppPadding] = useState(0);
   
   // Password change state
   const [showPasswordChange, setShowPasswordChange] = useState(false);
@@ -43,11 +73,15 @@ const App: React.FC = () => {
   const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
   const currentPasswordRef = useRef<HTMLInputElement>(null);
 
-  // Initialize theme on mount
+  // Initialize theme on mount and detect in-app browser
   useEffect(() => {
     const theme = initTheme();
     setCurrentTheme(theme.name);
     setAdminMode(isAdmin());
+    
+    // Detect in-app browsers and set extra padding
+    const { extraPadding } = detectInAppBrowser();
+    setInAppPadding(extraPadding);
   }, []);
 
   // Auto-type help command on first load (after a brief delay)
@@ -224,11 +258,11 @@ const App: React.FC = () => {
 
           case 'success':
             addLine({ type: 'success', content: result.content || '' });
-            break;
+          break;
 
           case 'info':
             addLine({ type: 'info', content: result.content || '' });
-            break;
+          break;
 
           case 'navigate':
             if (result.target) {
@@ -236,11 +270,11 @@ const App: React.FC = () => {
               await new Promise((resolve) => setTimeout(resolve, 300));
               setCurrentScreen(result.target as AppScreen);
             }
-            break;
+          break;
 
           case 'clear':
             clearTerminal();
-            break;
+          break;
 
           case 'theme':
             if (result.target && themes[result.target]) {
@@ -248,8 +282,8 @@ const App: React.FC = () => {
               setCurrentTheme(result.target);
               addLine({ type: 'success', content: result.content || `Theme: ${result.target}` });
             }
-            break;
-        }
+          break;
+      }
       }
 
       setIsProcessing(false);
@@ -342,7 +376,7 @@ const App: React.FC = () => {
           <div className="flex gap-2 justify-end text-sm">
             <button
               type="button"
-              onClick={() => {
+                  onClick={() => {
                 setShowPasswordPrompt(false);
                 setPasswordInput('');
                 setPasswordError('');
@@ -361,11 +395,11 @@ const App: React.FC = () => {
               style={{
                 color: 'var(--term-background)',
                 backgroundColor: 'var(--term-primary)',
-              }}
-            >
+                  }}
+                >
               Login
             </button>
-          </div>
+                </div>
         </form>
       </motion.div>
     </motion.div>
@@ -392,16 +426,16 @@ const App: React.FC = () => {
         <div className="text-center mb-4">
           <div style={{ color: 'var(--term-primary)' }} className="text-lg font-bold mb-1">
             passwd
-          </div>
+            </div>
           <div style={{ color: 'var(--term-muted)' }} className="text-sm">
             Change admin password
-          </div>
+            </div>
         </div>
         
         {passwordChangeSuccess ? (
           <div className="text-center py-4" style={{ color: 'var(--term-success)' }}>
             Password changed successfully!
-          </div>
+            </div>
         ) : (
           <form onSubmit={handlePasswordChangeSubmit}>
             <div className="space-y-3 mb-4">
@@ -423,7 +457,7 @@ const App: React.FC = () => {
                   placeholder="Current password"
                   autoComplete="off"
                 />
-              </div>
+            </div>
               <div>
                 <label className="block text-xs mb-1" style={{ color: 'var(--term-muted)' }}>
                   New Password
@@ -441,7 +475,7 @@ const App: React.FC = () => {
                   placeholder="New password (min 6 chars)"
                   autoComplete="off"
                 />
-              </div>
+        </div>
               <div>
                 <label className="block text-xs mb-1" style={{ color: 'var(--term-muted)' }}>
                   Confirm New Password
@@ -459,13 +493,13 @@ const App: React.FC = () => {
                   placeholder="Confirm new password"
                   autoComplete="off"
                 />
-              </div>
+            </div>
             </div>
             
             {passwordChangeError && (
               <div className="text-sm mb-4" style={{ color: 'var(--term-error)' }}>
                 {passwordChangeError}
-              </div>
+        </div>
             )}
             
             <div className="flex gap-2">
@@ -546,7 +580,7 @@ const App: React.FC = () => {
           >
             <AboutApp onBack={handleBack} />
           </motion.div>
-        );
+      );
 
       default:
         return (
@@ -595,7 +629,10 @@ const App: React.FC = () => {
       <TerminalWindow
         title={`${adminMode ? 'admin' : 'visitor'}@amore.build:~/${currentScreen === 'terminal' ? '' : currentScreen}`}
         className="w-full max-w-6xl relative z-10"
-        style={{ height: 'calc(100dvh - 1rem)', maxHeight: 'calc(100dvh - 1rem)' }}
+        style={{ 
+          height: `calc(100dvh - 1rem - ${inAppPadding}px)`, 
+          maxHeight: `calc(100dvh - 1rem - ${inAppPadding}px)` 
+        }}
       >
         <AnimatePresence mode="wait">{renderScreen()}</AnimatePresence>
         <AnimatePresence>{PasswordPrompt}</AnimatePresence>

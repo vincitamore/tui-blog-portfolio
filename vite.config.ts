@@ -16,17 +16,17 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
-      devOptions: { enabled: true },
-      manifest: {
+    registerType: 'autoUpdate',
+    devOptions: { enabled: true },
+    manifest: {
         name: 'AMORE.BUILD',
         short_name: 'AMORE',
         description: 'Terminal-style portfolio of a fullstack engineer. Qui vincit, vincit amore.',
         theme_color: '#bd93f9',
         background_color: '#282a36',
         display: 'standalone',
-        icons: [
-          {
+      icons: [
+        {
             src: 'android-chrome-192x192.png',
             sizes: '192x192',
             type: 'image/png',
@@ -40,7 +40,7 @@ export default defineConfig({
           },
           {
             src: 'android-chrome-192x192.png',
-            sizes: '192x192',
+          sizes: '192x192',
             type: 'image/png',
             purpose: 'maskable',
           },
