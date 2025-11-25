@@ -142,8 +142,8 @@ const Terminal: React.FC<TerminalProps> = ({
       className="h-full overflow-auto font-mono text-sm leading-tight cursor-text p-4"
       style={{ backgroundColor: 'var(--term-background)', color: 'var(--term-foreground)' }}
     >
-      {/* Welcome message - no background, inline display */}
-      {welcomeMessage && <div className="mb-2">{welcomeMessage}</div>}
+      {/* Welcome message - no background, no overflow */}
+      {welcomeMessage && <div className="mb-2 overflow-hidden">{welcomeMessage}</div>}
 
       {/* Terminal output */}
       <div className="space-y-1">

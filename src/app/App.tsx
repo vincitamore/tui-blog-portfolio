@@ -233,11 +233,11 @@ const App: React.FC = () => {
     setCurrentScreen('terminal');
   }, [addLine]);
 
-  // Welcome message component - scales down on mobile
+  // Welcome message component - scales down on mobile, no scrollbar
   const WelcomeMessage = (
-    <div className="flex justify-center overflow-x-auto">
+    <div className="flex justify-center overflow-hidden">
       <div
-        className="leading-none whitespace-pre font-mono text-[6px] sm:text-[8px] md:text-[10px] lg:text-xs origin-center"
+        className="leading-none whitespace-pre font-mono text-[5px] xs:text-[6px] sm:text-[8px] md:text-[10px] lg:text-xs origin-center"
         style={{ 
           color: 'var(--term-primary)',
           background: 'transparent',

@@ -75,15 +75,15 @@ const AboutApp: React.FC<AboutAppProps> = ({ onBack }) => {
       {/* Scrollable content */}
       <div className="flex-1 overflow-auto p-4">
         <div className="space-y-8 px-2">
-          {/* ASCII Art Header - scales down on mobile */}
+          {/* ASCII Art Header - scales down on mobile, no scrollbar */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center overflow-x-auto"
+            className="text-center overflow-hidden"
             style={{ color: 'var(--term-primary)', background: 'transparent' }}
           >
             <div
-              className="text-[6px] sm:text-[8px] md:text-[10px] lg:text-xs leading-tight whitespace-pre font-mono mx-auto"
+              className="text-[5px] xs:text-[6px] sm:text-[8px] md:text-[10px] lg:text-xs leading-tight whitespace-pre font-mono mx-auto"
               style={{ width: 'fit-content' }}
             >
               {BANNER}
