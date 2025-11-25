@@ -1,107 +1,102 @@
 /**
  * Admin Authentication System
- * Uses SHA-256 hashing for secure password verification
- * Session-based auth (not persisted to localStorage for security)
+ * Uses server-side session tokens for secure authentication
+ * All admin API requests require valid session token
  */
 
-// Password hash is fetched from server
-let currentPasswordHash: string | null = null;
-let isAdminSession = false;
+// Session token stored in memory (cleared on page refresh for security)
+let sessionToken: string | null = null;
 
-// Default password hash for "password"
-const DEFAULT_HASH = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8';
+/**
+ * Get the current auth token for API requests
+ */
+export function getAuthToken(): string | null {
+  return sessionToken;
+}
 
-// Fetch the current password hash from server
-async function fetchPasswordHash(): Promise<string> {
-  if (currentPasswordHash) return currentPasswordHash;
-  
-  try {
-    const response = await fetch('/api/admin/hash');
-    if (response.ok) {
-      const data = await response.json();
-      const hash = data.hash as string;
-      currentPasswordHash = hash;
-      return hash;
-    }
-  } catch (e) {
-    console.error('Failed to fetch password hash:', e);
+/**
+ * Get auth headers for API requests
+ */
+export function getAuthHeaders(): HeadersInit {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (sessionToken) {
+    headers['Authorization'] = `Bearer ${sessionToken}`;
   }
-  
-  // Fallback to default hash
-  return DEFAULT_HASH;
+  return headers;
 }
 
 /**
- * Hash a string using SHA-256
- */
-async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-/**
- * Verify admin password
+ * Login with password - returns true if successful
  */
 export async function verifyAdminPassword(password: string): Promise<boolean> {
-  const hash = await hashPassword(password);
-  const storedHash = await fetchPasswordHash();
-  return hash === storedHash;
+  try {
+    const response = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      sessionToken = data.token;
+      return true;
+    }
+    return false;
+  } catch (e) {
+    console.error('Login failed:', e);
+    return false;
+  }
 }
 
 /**
- * Set admin session status
+ * Set admin session status (for compatibility - actual session managed by token)
  */
 export function setAdminSession(status: boolean): void {
-  isAdminSession = status;
+  if (!status) {
+    sessionToken = null;
+  }
 }
 
 /**
- * Check if current session is admin
+ * Check if current session is admin (has valid token)
  */
 export function isAdmin(): boolean {
-  return isAdminSession;
+  return sessionToken !== null;
 }
 
 /**
  * Logout admin session
  */
-export function logoutAdmin(): void {
-  isAdminSession = false;
+export async function logoutAdmin(): Promise<void> {
+  if (sessionToken) {
+    try {
+      await fetch('/api/admin/logout', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      });
+    } catch (e) {
+      // Ignore logout errors
+    }
+  }
+  sessionToken = null;
 }
 
 /**
- * Generate a hash for a new password (for setup)
- */
-export async function generatePasswordHash(password: string): Promise<string> {
-  return hashPassword(password);
-}
-
-/**
- * Change admin password (requires current password verification)
+ * Change admin password (requires auth and current password)
  */
 export async function changeAdminPassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
-  // Verify current password first
-  const isValid = await verifyAdminPassword(currentPassword);
-  if (!isValid) {
-    return { success: false, error: 'Current password is incorrect' };
+  if (!sessionToken) {
+    return { success: false, error: 'Not authenticated' };
   }
-  
-  // Hash the new password
-  const newHash = await hashPassword(newPassword);
   
   try {
     const response = await fetch('/api/admin/password', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ hash: newHash }),
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ currentPassword, newPassword }),
     });
     
     if (response.ok) {
-      // Update cached hash
-      currentPasswordHash = newHash;
       return { success: true };
     } else {
       const data = await response.json();

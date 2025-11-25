@@ -1,12 +1,27 @@
 /**
  * API Client for Portfolio
  * Communicates with the Express server to manage content
+ * All write operations require authentication
  */
+
+import { getAuthHeaders } from './auth';
 
 // In production, use relative URL (nginx proxies /api to the backend)
 // In development, use localhost:3001
 const API_URL = import.meta.env.VITE_API_URL || 
   (import.meta.env.PROD ? '' : 'http://localhost:3001');
+
+// Helper to handle auth errors
+async function handleResponse<T>(res: Response): Promise<T> {
+  if (res.status === 401) {
+    throw new Error('Authentication required. Please login as admin.');
+  }
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `Request failed: ${res.status}`);
+  }
+  return res.json();
+}
 
 // ============ BLOG API ============
 
@@ -35,27 +50,29 @@ export async function fetchBlogPosts(): Promise<BlogPost[]> {
 export async function createBlogPost(post: Omit<BlogPost, 'id' | 'slug' | 'date'>): Promise<BlogPost> {
   const res = await fetch(`${API_URL}/api/blog`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(post),
   });
-  if (!res.ok) throw new Error('Failed to create post');
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function updateBlogPost(slug: string, post: Partial<BlogPost>): Promise<BlogPost> {
   const res = await fetch(`${API_URL}/api/blog/${slug}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(post),
   });
-  if (!res.ok) throw new Error('Failed to update post');
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function deleteBlogPost(slug: string): Promise<void> {
   const res = await fetch(`${API_URL}/api/blog/${slug}`, {
     method: 'DELETE',
+    headers: getAuthHeaders(),
   });
+  if (res.status === 401) {
+    throw new Error('Authentication required. Please login as admin.');
+  }
   if (!res.ok) throw new Error('Failed to delete post');
 }
 
@@ -85,38 +102,39 @@ export async function fetchProjects(): Promise<Project[]> {
 export async function createProject(project: Omit<Project, 'id'>): Promise<Project> {
   const res = await fetch(`${API_URL}/api/portfolio`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(project),
   });
-  if (!res.ok) throw new Error('Failed to create project');
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function updateProject(id: string, project: Partial<Project>): Promise<Project> {
   const res = await fetch(`${API_URL}/api/portfolio/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(project),
   });
-  if (!res.ok) throw new Error('Failed to update project');
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function deleteProject(id: string): Promise<void> {
   const res = await fetch(`${API_URL}/api/portfolio/${id}`, {
     method: 'DELETE',
+    headers: getAuthHeaders(),
   });
+  if (res.status === 401) {
+    throw new Error('Authentication required. Please login as admin.');
+  }
   if (!res.ok) throw new Error('Failed to delete project');
 }
 
 export async function reorderProjects(projectIds: string[]): Promise<Project[]> {
   const res = await fetch(`${API_URL}/api/portfolio/reorder`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ projectIds }),
   });
-  if (!res.ok) throw new Error('Failed to reorder projects');
-  return res.json();
+  return handleResponse(res);
 }
 
 

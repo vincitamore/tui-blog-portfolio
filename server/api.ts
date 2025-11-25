@@ -2,10 +2,13 @@
  * Lightweight API Server for Portfolio
  * Saves blog posts and portfolio projects directly to JSON files
  * No database required - just simple file-based storage
+ * 
+ * SECURITY: All write operations require valid admin authentication
  */
 
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -16,6 +19,62 @@ const CONTENT_DIR = path.join(__dirname, '../content');
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// ============ AUTHENTICATION ============
+
+// In-memory session store (in production, use Redis or similar)
+const activeSessions = new Map<string, { createdAt: number }>();
+const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+// Default password hash for "password" - CHANGE THIS IN PRODUCTION
+const DEFAULT_HASH = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8';
+
+// Generate secure session token
+function generateSessionToken(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+// Hash password using SHA-256
+function hashPassword(password: string): string {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+// Clean up expired sessions periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, session] of activeSessions.entries()) {
+    if (now - session.createdAt > SESSION_DURATION) {
+      activeSessions.delete(token);
+    }
+  }
+}, 60 * 60 * 1000); // Check every hour
+
+// Authentication middleware - protects admin routes
+function requireAuth(req: Request, res: Response, next: NextFunction): void {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  
+  const token = authHeader.slice(7); // Remove "Bearer " prefix
+  const session = activeSessions.get(token);
+  
+  if (!session) {
+    res.status(401).json({ error: 'Invalid or expired session' });
+    return;
+  }
+  
+  // Check if session is expired
+  if (Date.now() - session.createdAt > SESSION_DURATION) {
+    activeSessions.delete(token);
+    res.status(401).json({ error: 'Session expired' });
+    return;
+  }
+  
+  next();
+}
 
 // Ensure content directory exists
 async function ensureContentDir() {
@@ -44,9 +103,52 @@ async function writeJsonFile(filename: string, data: unknown): Promise<void> {
   await fs.writeFile(filepath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
+// ============ AUTH ENDPOINTS ============
+
+// Login - verify password and return session token
+app.post('/api/admin/login', async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) {
+      return res.status(400).json({ error: 'Password required' });
+    }
+    
+    const config = await readJsonFile<{ passwordHash?: string }>('admin.json', {});
+    const storedHash = config.passwordHash || DEFAULT_HASH;
+    const providedHash = hashPassword(password);
+    
+    if (providedHash !== storedHash) {
+      return res.status(401).json({ error: 'Invalid password' });
+    }
+    
+    // Create session
+    const token = generateSessionToken();
+    activeSessions.set(token, { createdAt: Date.now() });
+    
+    res.json({ token });
+  } catch (err) {
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// Logout - invalidate session token
+app.post('/api/admin/logout', requireAuth, (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7);
+    activeSessions.delete(token);
+  }
+  res.json({ success: true });
+});
+
+// Verify session is valid (for client to check)
+app.get('/api/admin/verify', requireAuth, (_req, res) => {
+  res.json({ valid: true });
+});
+
 // ============ BLOG ENDPOINTS ============
 
-// Get all blog posts
+// Get all blog posts (public)
 app.get('/api/blog', async (_req, res) => {
   try {
     const posts = await readJsonFile('blog.json', []);
@@ -56,8 +158,8 @@ app.get('/api/blog', async (_req, res) => {
   }
 });
 
-// Create new blog post
-app.post('/api/blog', async (req, res) => {
+// Create new blog post (requires auth)
+app.post('/api/blog', requireAuth, async (req, res) => {
   try {
     const posts = await readJsonFile<any[]>('blog.json', []);
     const newPost = {
@@ -74,8 +176,8 @@ app.post('/api/blog', async (req, res) => {
   }
 });
 
-// Update blog post
-app.put('/api/blog/:slug', async (req, res) => {
+// Update blog post (requires auth)
+app.put('/api/blog/:slug', requireAuth, async (req, res) => {
   try {
     const posts = await readJsonFile<any[]>('blog.json', []);
     const index = posts.findIndex(p => p.slug === req.params.slug);
@@ -90,8 +192,8 @@ app.put('/api/blog/:slug', async (req, res) => {
   }
 });
 
-// Delete blog post
-app.delete('/api/blog/:slug', async (req, res) => {
+// Delete blog post (requires auth)
+app.delete('/api/blog/:slug', requireAuth, async (req, res) => {
   try {
     const posts = await readJsonFile<any[]>('blog.json', []);
     const filtered = posts.filter(p => p.slug !== req.params.slug);
@@ -104,7 +206,7 @@ app.delete('/api/blog/:slug', async (req, res) => {
 
 // ============ PORTFOLIO ENDPOINTS ============
 
-// Get all projects
+// Get all projects (public)
 app.get('/api/portfolio', async (_req, res) => {
   try {
     const projects = await readJsonFile('portfolio.json', []);
@@ -114,8 +216,8 @@ app.get('/api/portfolio', async (_req, res) => {
   }
 });
 
-// Create new project
-app.post('/api/portfolio', async (req, res) => {
+// Create new project (requires auth)
+app.post('/api/portfolio', requireAuth, async (req, res) => {
   try {
     const projects = await readJsonFile<any[]>('portfolio.json', []);
     const newProject = {
@@ -130,8 +232,8 @@ app.post('/api/portfolio', async (req, res) => {
   }
 });
 
-// Update project
-app.put('/api/portfolio/:id', async (req, res) => {
+// Update project (requires auth)
+app.put('/api/portfolio/:id', requireAuth, async (req, res) => {
   try {
     const projects = await readJsonFile<any[]>('portfolio.json', []);
     const index = projects.findIndex(p => p.id === req.params.id);
@@ -146,8 +248,8 @@ app.put('/api/portfolio/:id', async (req, res) => {
   }
 });
 
-// Delete project
-app.delete('/api/portfolio/:id', async (req, res) => {
+// Delete project (requires auth)
+app.delete('/api/portfolio/:id', requireAuth, async (req, res) => {
   try {
     const projects = await readJsonFile<any[]>('portfolio.json', []);
     const filtered = projects.filter(p => p.id !== req.params.id);
@@ -158,8 +260,8 @@ app.delete('/api/portfolio/:id', async (req, res) => {
   }
 });
 
-// Reorder projects
-app.post('/api/portfolio/reorder', async (req, res) => {
+// Reorder projects (requires auth)
+app.post('/api/portfolio/reorder', requireAuth, async (req, res) => {
   try {
     const { projectIds } = req.body;
     if (!Array.isArray(projectIds)) {
@@ -188,29 +290,32 @@ app.post('/api/portfolio/reorder', async (req, res) => {
 
 // ============ ADMIN PASSWORD ENDPOINTS ============
 
-// Default password hash for "password" - will be overwritten once changed
-const DEFAULT_HASH = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8';
-
-// Get current password hash (for client-side verification)
-app.get('/api/admin/hash', async (_req, res) => {
+// Update password (requires auth + current password verification)
+app.put('/api/admin/password', requireAuth, async (req, res) => {
   try {
-    const config = await readJsonFile<{ passwordHash?: string }>('admin.json', {});
-    res.json({ hash: config.passwordHash || DEFAULT_HASH });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to read config' });
-  }
-});
-
-// Update password hash
-app.put('/api/admin/password', async (req, res) => {
-  try {
-    const { hash } = req.body;
-    if (!hash || typeof hash !== 'string' || hash.length !== 64) {
-      return res.status(400).json({ error: 'Invalid hash format' });
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current and new password required' });
     }
+    
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters' });
+    }
+    
+    // Verify current password
     const config = await readJsonFile<{ passwordHash?: string }>('admin.json', {});
-    config.passwordHash = hash;
+    const storedHash = config.passwordHash || DEFAULT_HASH;
+    const currentHash = hashPassword(currentPassword);
+    
+    if (currentHash !== storedHash) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    
+    // Update to new password
+    config.passwordHash = hashPassword(newPassword);
     await writeJsonFile('admin.json', config);
+    
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update password' });
