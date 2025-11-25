@@ -76,7 +76,67 @@ interface TerminalProps {
   onCommand: (command: string) => void;
   isProcessing?: boolean;
   welcomeMessage?: React.ReactNode;
+  autoTypeCommand?: string;
+  onAutoTypeComplete?: () => void;
 }
+
+// Known commands for making them clickable in output
+const CLICKABLE_COMMANDS = [
+  'help', 'ls', 'dir', 'cd', 'portfolio', 'blog', 'about',
+  'theme', 'whoami', 'clear', 'cls', 'neofetch', 'contact', 'skills', 'cat'
+];
+
+// Parse a line and make commands clickable
+const renderClickableOutput = (
+  content: string,
+  onCommandClick: (cmd: string) => void
+): React.ReactNode => {
+  // Pattern to match commands at the start of lines (with optional leading spaces)
+  // Matches: "  help  ", "portfolio", "cd <section>", etc.
+  const parts: React.ReactNode[] = [];
+  const lines = content.split('\n');
+  
+  lines.forEach((line, lineIdx) => {
+    if (lineIdx > 0) parts.push('\n');
+    
+    // Check if this line contains a clickable command
+    let foundCommand = false;
+    for (const cmd of CLICKABLE_COMMANDS) {
+      // Match command at start of line (with whitespace) or as standalone word
+      const regex = new RegExp(`^(\\s*)(${cmd})(\\s|$|,)`, 'i');
+      const match = line.match(regex);
+      if (match) {
+        const beforeCmd = match[1];
+        const cmdText = match[2];
+        const afterMatch = line.slice(match[0].length - (match[3]?.length || 0));
+        
+        parts.push(beforeCmd);
+        parts.push(
+          <button
+            key={`${lineIdx}-${cmd}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onCommandClick(cmdText.toLowerCase());
+            }}
+            className="underline decoration-dotted hover:decoration-solid cursor-pointer touch-manipulation"
+            style={{ color: 'var(--term-accent)' }}
+          >
+            {cmdText}
+          </button>
+        );
+        parts.push(afterMatch);
+        foundCommand = true;
+        break;
+      }
+    }
+    
+    if (!foundCommand) {
+      parts.push(line);
+    }
+  });
+  
+  return <>{parts}</>;
+};
 
 /**
  * Terminal shell component with command input and blinking cursor.
@@ -89,12 +149,48 @@ const Terminal: React.FC<TerminalProps> = ({
   onCommand,
   isProcessing = false,
   welcomeMessage,
+  autoTypeCommand,
+  onAutoTypeComplete,
 }) => {
   const [input, setInput] = useState('');
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
+
+  // Auto-type effect
+  useEffect(() => {
+    if (!autoTypeCommand) return;
+
+    let currentIndex = 0;
+    let isActive = true;
+    
+    const typeNextChar = () => {
+      if (!isActive) return;
+      
+      if (currentIndex < autoTypeCommand.length) {
+        currentIndex++;
+        setInput(autoTypeCommand.slice(0, currentIndex));
+        setTimeout(typeNextChar, 80);
+      } else {
+        // Done typing, pause then execute
+        setTimeout(() => {
+          if (!isActive) return;
+          onCommand(autoTypeCommand);
+          setInput('');
+          setCommandHistory((prev) => [...prev, autoTypeCommand]);
+          onAutoTypeComplete?.();
+        }, 300);
+      }
+    };
+    
+    // Start typing
+    typeNextChar();
+
+    return () => {
+      isActive = false;
+    };
+  }, [autoTypeCommand, onCommand, onAutoTypeComplete]);
 
   // Auto-scroll to bottom and maintain focus
   useEffect(() => {
@@ -235,6 +331,8 @@ const Terminal: React.FC<TerminalProps> = ({
                     return 'dracula';
                   }
                 })()} />
+              ) : line.type === 'output' ? (
+                renderClickableOutput(line.content, onCommand)
               ) : (
                 line.content
               )}

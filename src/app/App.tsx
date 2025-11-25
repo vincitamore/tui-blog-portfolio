@@ -31,6 +31,8 @@ const App: React.FC = () => {
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const passwordInputRef = useRef<HTMLInputElement>(null);
+  const [autoTypeCommand, setAutoTypeCommand] = useState<string | undefined>(undefined);
+  const [hasAutoTyped, setHasAutoTyped] = useState(false);
   
   // Password change state
   const [showPasswordChange, setShowPasswordChange] = useState(false);
@@ -46,6 +48,24 @@ const App: React.FC = () => {
     const theme = initTheme();
     setCurrentTheme(theme.name);
     setAdminMode(isAdmin());
+  }, []);
+
+  // Auto-type help command on first load (after a brief delay)
+  useEffect(() => {
+    if (hasAutoTyped) return;
+    
+    // Small delay to let the terminal render first
+    const timer = setTimeout(() => {
+      setHasAutoTyped(true);
+      setAutoTypeCommand('help');
+    }, 800);
+    
+    return () => clearTimeout(timer);
+  }, [hasAutoTyped]);
+
+  // Clear auto-type command after completion
+  const handleAutoTypeComplete = useCallback(() => {
+    setAutoTypeCommand(undefined);
   }, []);
 
   // Focus password input when prompt shows
@@ -540,6 +560,8 @@ const App: React.FC = () => {
               onCommand={handleCommand}
               isProcessing={isProcessing}
               welcomeMessage={WelcomeMessage}
+              autoTypeCommand={autoTypeCommand}
+              onAutoTypeComplete={handleAutoTypeComplete}
             />
           </motion.div>
         );
