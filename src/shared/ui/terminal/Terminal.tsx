@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export interface TerminalLine {
   id: string;
-  type: 'command' | 'output' | 'error' | 'info' | 'success' | 'neofetch' | 'skills';
+  type: 'command' | 'output' | 'error' | 'info' | 'success' | 'neofetch' | 'skills' | 'contact';
   content: string;
   timestamp?: Date;
 }
@@ -113,6 +113,46 @@ const SkillsOutput: React.FC = () => {
         
         {/* Table footer */}
         <div style={{ color: 'var(--term-muted)' }}>└──────────────┴─────────────────────────────────────────────────┘</div>
+      </div>
+    </div>
+  );
+};
+
+// Contact data with clickable links
+const CONTACT_DATA = [
+  { label: 'Email', value: 'vincit_amore@amore.build', href: 'mailto:vincit_amore@amore.build' },
+  { label: 'GitHub', value: 'github.com/vincitamore', href: 'https://github.com/vincitamore' },
+  { label: 'X', value: '@vincit_amore', href: 'https://x.com/vincit_amore' },
+  { label: 'Website', value: 'amore.build', href: 'https://amore.build' },
+];
+
+// Contact output component with clickable links
+const ContactOutput: React.FC = () => {
+  return (
+    <div className="my-2">
+      <div className="mb-2" style={{ color: 'var(--term-foreground)' }}>
+        Contact Information:
+      </div>
+      <div className="space-y-1 pl-2">
+        {CONTACT_DATA.map((contact) => (
+          <div key={contact.label} className="flex items-center gap-4">
+            <span
+              className="w-16 sm:w-20"
+              style={{ color: 'var(--term-muted)' }}
+            >
+              {contact.label}
+            </span>
+            <a
+              href={contact.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-dotted hover:decoration-solid touch-manipulation py-1"
+              style={{ color: 'var(--term-primary)' }}
+            >
+              {contact.value}
+            </a>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -438,6 +478,8 @@ const Terminal: React.FC<TerminalProps> = ({
                 })()} />
               ) : line.type === 'skills' ? (
                 <SkillsOutput />
+              ) : line.type === 'contact' ? (
+                <ContactOutput />
               ) : line.type === 'output' ? (
                 renderClickableOutput(line.content, onCommand)
               ) : (

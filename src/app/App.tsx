@@ -237,12 +237,17 @@ const App: React.FC = () => {
             }
             // Check for neofetch (special responsive rendering)
             if (result.target === 'neofetch') {
-              addLine({ type: 'neofetch' as any, content: result.content || '{}' });
+              addLine({ type: 'neofetch', content: result.content || '{}' });
               break;
             }
             // Check for skills (special responsive rendering)
             if (result.target === 'skills') {
-              addLine({ type: 'skills' as any, content: '' });
+              addLine({ type: 'skills', content: '' });
+              break;
+            }
+            // Check for contact (special clickable rendering)
+            if (result.target === 'contact') {
+              addLine({ type: 'contact', content: '' });
               break;
             }
             if (result.lines) {

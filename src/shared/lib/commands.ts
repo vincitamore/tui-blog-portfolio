@@ -247,16 +247,8 @@ const commands: Record<string, CommandHandler> = {
     description: 'Show contact information',
     execute: () => ({
       type: 'output',
-      lines: [
-        '',
-        'Contact Information:',
-        '',
-        '  Email     vincit_amore@amore.build',
-        '  GitHub    github.com/vincitamore',
-        '  X         @vincit_amore',
-        '  Website   amore.build',
-        '',
-      ],
+      target: 'contact',
+      content: '',
     }),
   },
 
