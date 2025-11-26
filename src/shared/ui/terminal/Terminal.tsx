@@ -167,6 +167,7 @@ interface TerminalProps {
   welcomeMessage?: React.ReactNode;
   autoTypeCommand?: string;
   onAutoTypeComplete?: () => void;
+  disableFocus?: boolean; // Disable auto-focus when modals are open
 }
 
 // Known commands for making them clickable in output
@@ -289,6 +290,7 @@ const Terminal: React.FC<TerminalProps> = ({
   welcomeMessage,
   autoTypeCommand,
   onAutoTypeComplete,
+  disableFocus = false,
 }) => {
   const [input, setInput] = useState('');
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -297,11 +299,12 @@ const Terminal: React.FC<TerminalProps> = ({
   const terminalRef = useRef<HTMLDivElement>(null);
   
   // Focus input only on non-touch devices to avoid keyboard popup
+  // Skip if focus is disabled (e.g., when a modal is open)
   const focusInput = useCallback(() => {
-    if (!isTouchDevice()) {
+    if (!isTouchDevice() && !disableFocus) {
       inputRef.current?.focus();
     }
-  }, []);
+  }, [disableFocus]);
 
   // Auto-type effect
   useEffect(() => {

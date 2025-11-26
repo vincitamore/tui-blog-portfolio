@@ -160,17 +160,17 @@ const TuiEditor: React.FC<TuiEditorProps> = ({
       )}
 
       {/* Editor content */}
-      <div className="flex-1 overflow-auto p-3 sm:p-4 space-y-4">
+      <div className="flex-1 overflow-hidden p-3 sm:p-4 flex flex-col gap-3 min-h-0">
         {fields.map((field, index) => (
           <motion.div
             key={field.name}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className="space-y-1"
+            className={`space-y-1 ${field.type === 'textarea' ? 'flex-1 flex flex-col min-h-0' : 'shrink-0'}`}
           >
             <label
-              className="block text-sm font-medium"
+              className="block text-sm font-medium shrink-0"
               style={{ color: index === activeField ? 'var(--term-primary)' : 'var(--term-muted)' }}
             >
               {field.label}
@@ -183,8 +183,7 @@ const TuiEditor: React.FC<TuiEditorProps> = ({
                 onChange={e => handleChange(field.name, e.target.value)}
                 onFocus={() => setActiveField(index)}
                 placeholder={field.placeholder}
-                rows={8}
-                className="w-full p-3 font-mono text-sm resize-none outline-none touch-manipulation"
+                className="w-full flex-1 p-3 font-mono text-sm resize-none outline-none touch-manipulation min-h-0"
                 style={{
                   backgroundColor: 'var(--term-background)',
                   color: 'var(--term-foreground)',
@@ -212,7 +211,7 @@ const TuiEditor: React.FC<TuiEditorProps> = ({
               />
             )}
             {field.type === 'tags' && (
-              <p className="text-xs" style={{ color: 'var(--term-muted)' }}>
+              <p className="text-xs shrink-0" style={{ color: 'var(--term-muted)' }}>
                 Separate tags with commas
               </p>
             )}

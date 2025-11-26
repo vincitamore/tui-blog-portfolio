@@ -105,14 +105,20 @@ const App: React.FC = () => {
   // Focus password input when prompt shows
   useEffect(() => {
     if (showPasswordPrompt && passwordInputRef.current) {
-      passwordInputRef.current.focus();
+      // Small delay to ensure terminal focus is disabled first
+      requestAnimationFrame(() => {
+        passwordInputRef.current?.focus();
+      });
     }
   }, [showPasswordPrompt]);
 
   // Focus current password input when change prompt shows
   useEffect(() => {
     if (showPasswordChange && currentPasswordRef.current) {
-      currentPasswordRef.current.focus();
+      // Small delay to ensure terminal focus is disabled first
+      requestAnimationFrame(() => {
+        currentPasswordRef.current?.focus();
+      });
     }
   }, [showPasswordChange]);
 
@@ -606,6 +612,7 @@ const App: React.FC = () => {
               welcomeMessage={WelcomeMessage}
               autoTypeCommand={autoTypeCommand}
               onAutoTypeComplete={handleAutoTypeComplete}
+              disableFocus={showPasswordPrompt || showPasswordChange}
             />
           </motion.div>
         );

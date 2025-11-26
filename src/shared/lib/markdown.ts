@@ -2,9 +2,11 @@
  * TUI-Flavored Markdown Renderer
  * 
  * Uses ASCII/Unicode box-drawing characters for a terminal aesthetic
+ * Includes syntax highlighting via highlight.js with theme-aware colors
  */
 
 import { marked, Renderer, type Tokens } from 'marked';
+import hljs from 'highlight.js';
 
 // Create a custom TUI-styled renderer
 const tuiRenderer = new Renderer();
@@ -42,28 +44,61 @@ tuiRenderer.listitem = function(item: Tokens.ListItem): string {
 // Blockquotes with pipe characters
 tuiRenderer.blockquote = function({ tokens }: Tokens.Blockquote): string {
   const text = this.parser.parse(tokens);
-  return `<blockquote class="tui-blockquote">${text}</blockquote>`;
+  return `<blockquote class="tui-blockquote"><span class="tui-blockquote-border"></span><div class="tui-blockquote-content">${text}</div></blockquote>`;
 };
 
-// Code blocks with ASCII border
+// Code blocks with syntax highlighting
 tuiRenderer.code = function({ text, lang }: Tokens.Code): string {
-  const escapedText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const langLabel = lang ? `<span class="tui-code-lang">[ ${lang} ]</span>` : '';
+  let highlightedCode: string;
+  let detectedLang = lang || '';
+  
+  if (lang && hljs.getLanguage(lang)) {
+    try {
+      const result = hljs.highlight(text, { language: lang, ignoreIllegals: true });
+      highlightedCode = result.value;
+    } catch {
+      highlightedCode = escapeHtml(text);
+    }
+  } else if (lang) {
+    // Try auto-detection if specified language not found
+    try {
+      const result = hljs.highlightAuto(text);
+      highlightedCode = result.value;
+      detectedLang = result.language || lang;
+    } catch {
+      highlightedCode = escapeHtml(text);
+    }
+  } else {
+    highlightedCode = escapeHtml(text);
+  }
+  
+  const langLabel = detectedLang ? `<span class="tui-code-lang">${detectedLang}</span>` : '';
+  
   return `<div class="tui-codeblock">
-    <div class="tui-code-header">┌${'─'.repeat(40)}${langLabel}</div>
-    <pre class="tui-code-content"><code>${escapedText}</code></pre>
-    <div class="tui-code-footer">└${'─'.repeat(40)}</div>
-  </div>`;
+<div class="tui-code-header"><span class="tui-code-border-char">┌</span>${langLabel}</div>
+<pre class="tui-code-content"><code class="hljs">${highlightedCode}</code></pre>
+<div class="tui-code-footer"><span class="tui-code-border-char">└</span></div>
+</div>`;
 };
+
+// Helper to escape HTML
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 // Inline code
 tuiRenderer.codespan = function({ text }: Tokens.Codespan): string {
-  return `<code class="tui-inline-code">‹${text}›</code>`;
+  return `<code class="tui-inline-code">${text}</code>`;
 };
 
 // Horizontal rule
 tuiRenderer.hr = function(): string {
-  return `<hr class="tui-hr" />`;
+  return `<div class="tui-hr"></div>`;
 };
 
 // Links with brackets

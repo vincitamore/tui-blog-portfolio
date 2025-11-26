@@ -306,31 +306,48 @@
     color: var(--term-secondary);
   }
 
-  /* Inline code with angle brackets */
+  /* Inline code */
   .markdown-content .tui-inline-code {
     background-color: var(--term-selection);
     color: var(--term-accent);
-    padding: 0.125em 0.25em;
+    padding: 0.125em 0.375em;
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    border-radius: 2px;
+  }
+
+  /* Code blocks */
+  .markdown-content .tui-codeblock {
+    margin: 1em 0;
     font-family: var(--font-mono);
     font-size: 0.9em;
   }
 
-  /* Code blocks with ASCII border */
-  .markdown-content .tui-codeblock {
-    margin: 1em 0;
-    font-family: var(--font-mono);
+  .markdown-content .tui-code-header {
+    display: flex;
+    align-items: center;
+    color: var(--term-muted);
+    padding-left: 1em;
+    margin-bottom: 0.25em;
   }
 
-  .markdown-content .tui-code-header,
   .markdown-content .tui-code-footer {
-    color: var(--term-muted);
-    font-size: 0.85em;
-    overflow: hidden;
+    display: none;
+  }
+
+  .markdown-content .tui-code-border-char {
+    display: none;
   }
 
   .markdown-content .tui-code-lang {
     color: var(--term-accent);
-    margin-left: 0.5em;
+    font-size: 0.85em;
+    text-transform: lowercase;
+  }
+
+  .markdown-content .tui-code-lang::before {
+    content: '// ';
+    color: var(--term-muted);
   }
 
   .markdown-content .tui-code-content {
@@ -338,14 +355,103 @@
     padding: 1em;
     overflow-x: auto;
     margin: 0;
-    border-left: 2px solid var(--term-muted);
-    border-right: 2px solid var(--term-muted);
+    border-left: 3px solid var(--term-accent);
   }
 
   .markdown-content .tui-code-content code {
     background: none;
     padding: 0;
     color: var(--term-foreground);
+    font-family: var(--font-mono);
+  }
+
+  /* Syntax Highlighting - Theme Aware */
+  .markdown-content .hljs {
+    background: transparent;
+    color: var(--term-foreground);
+  }
+
+  /* Keywords, control flow */
+  .markdown-content .hljs-keyword,
+  .markdown-content .hljs-selector-tag,
+  .markdown-content .hljs-built_in,
+  .markdown-content .hljs-name {
+    color: var(--term-keyword, var(--term-primary));
+  }
+
+  /* Strings */
+  .markdown-content .hljs-string,
+  .markdown-content .hljs-attr,
+  .markdown-content .hljs-symbol,
+  .markdown-content .hljs-bullet {
+    color: var(--term-string, var(--term-success));
+  }
+
+  /* Numbers */
+  .markdown-content .hljs-number,
+  .markdown-content .hljs-literal {
+    color: var(--term-accent);
+  }
+
+  /* Functions, methods */
+  .markdown-content .hljs-title,
+  .markdown-content .hljs-section,
+  .markdown-content .hljs-title\.function {
+    color: var(--term-function, var(--term-secondary));
+  }
+
+  /* Types, classes */
+  .markdown-content .hljs-type,
+  .markdown-content .hljs-class,
+  .markdown-content .hljs-title\.class {
+    color: var(--term-info);
+  }
+
+  /* Comments */
+  .markdown-content .hljs-comment,
+  .markdown-content .hljs-quote {
+    color: var(--term-comment, var(--term-muted));
+    font-style: italic;
+  }
+
+  /* Variables, params */
+  .markdown-content .hljs-variable,
+  .markdown-content .hljs-template-variable,
+  .markdown-content .hljs-params {
+    color: var(--term-foreground);
+  }
+
+  /* Operators, punctuation */
+  .markdown-content .hljs-operator,
+  .markdown-content .hljs-punctuation {
+    color: var(--term-muted);
+  }
+
+  /* Attributes in HTML/XML */
+  .markdown-content .hljs-attribute {
+    color: var(--term-warning);
+  }
+
+  /* Meta, preprocessor */
+  .markdown-content .hljs-meta,
+  .markdown-content .hljs-meta-keyword {
+    color: var(--term-accent);
+  }
+
+  /* Regex */
+  .markdown-content .hljs-regexp {
+    color: var(--term-error);
+  }
+
+  /* Addition/deletion for diffs */
+  .markdown-content .hljs-addition {
+    color: var(--term-success);
+    background-color: color-mix(in srgb, var(--term-success) 15%, transparent);
+  }
+
+  .markdown-content .hljs-deletion {
+    color: var(--term-error);
+    background-color: color-mix(in srgb, var(--term-error) 15%, transparent);
   }
 
   /* Links with brackets */
@@ -362,43 +468,42 @@
 
   /* Blockquotes with pipe character */
   .markdown-content .tui-blockquote {
+    display: flex;
     margin: 1em 0;
-    padding: 0.5em 0 0.5em 1em;
-    border-left: none;
+    padding-left: 1em;
+    border-left: 3px solid var(--term-primary);
     position: relative;
+  }
+
+  .markdown-content .tui-blockquote-border {
+    display: none;
+  }
+
+  .markdown-content .tui-blockquote-content {
+    flex: 1;
     color: var(--term-muted);
     font-style: italic;
   }
 
-  .markdown-content .tui-blockquote::before {
-    content: '│';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    color: var(--term-primary);
-    font-weight: bold;
-    line-height: 1.6;
-  }
-
-  .markdown-content .tui-blockquote p {
+  .markdown-content .tui-blockquote-content p,
+  .markdown-content .tui-blockquote-content .tui-paragraph {
     margin: 0.25em 0;
   }
 
   /* Horizontal rule */
   .markdown-content .tui-hr {
-    border: none;
     margin: 1.5em 0;
-    height: auto;
-    text-align: center;
-    overflow: visible;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
   }
 
-  .markdown-content .tui-hr::before {
-    content: '════════════════════════════════════════';
-    display: block;
-    color: var(--term-muted);
-    font-family: var(--font-mono);
+  .markdown-content .tui-hr::before,
+  .markdown-content .tui-hr::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--term-border), var(--term-border), transparent);
   }
 
   /* Legacy fallback styles */
