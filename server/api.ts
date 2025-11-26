@@ -148,8 +148,16 @@ app.get('/api/admin/verify', requireAuth, (_req, res) => {
 
 // ============ VISITOR INFO ============
 
-// Get visitor's IP address
-app.get('/api/whoami', (req, res) => {
+interface VisitorLog {
+  ip: string;
+  timestamp: string;
+  userAgent: string;
+}
+
+const MAX_VISITOR_LOGS = 100; // Keep last 100 visits
+
+// Get visitor's IP address and log the visit
+app.get('/api/whoami', async (req, res) => {
   // Get IP from various headers (nginx sets x-forwarded-for)
   const ip = req.headers['x-forwarded-for'] || 
              req.headers['x-real-ip'] || 
@@ -159,7 +167,31 @@ app.get('/api/whoami', (req, res) => {
   // x-forwarded-for can be a comma-separated list, take the first one
   const clientIp = Array.isArray(ip) ? ip[0] : ip.split(',')[0].trim();
   
+  // Log the visit
+  try {
+    const logs = await readJsonFile<VisitorLog[]>('visitors.json', []);
+    logs.unshift({
+      ip: clientIp,
+      timestamp: new Date().toISOString(),
+      userAgent: (req.headers['user-agent'] || 'unknown').slice(0, 200),
+    });
+    // Keep only the last MAX_VISITOR_LOGS entries
+    await writeJsonFile('visitors.json', logs.slice(0, MAX_VISITOR_LOGS));
+  } catch {
+    // Don't fail the request if logging fails
+  }
+  
   res.json({ ip: clientIp });
+});
+
+// Get visitor logs (admin only)
+app.get('/api/visitors', requireAuth, async (_req, res) => {
+  try {
+    const logs = await readJsonFile<VisitorLog[]>('visitors.json', []);
+    res.json(logs);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to read visitor logs' });
+  }
 });
 
 // ============ BLOG ENDPOINTS ============

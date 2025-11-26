@@ -68,6 +68,7 @@ const commands: Record<string, CommandHandler> = {
         ...(context?.isAdmin ? [
           '',
           'Admin commands:',
+          '  visitors          View recent visitor logs',
           '  passwd            Change admin password',
           '  logout            Exit admin session',
         ] : []),
@@ -227,6 +228,17 @@ const commands: Record<string, CommandHandler> = {
       }
       // Signal to trigger password change prompt
       return { type: 'output', target: 'password_change', content: '' };
+    },
+  },
+
+  visitors: {
+    description: 'View recent visitor logs',
+    execute: (_args, context) => {
+      if (!context?.isAdmin) {
+        return { type: 'error', content: 'Permission denied. Admin only.' };
+      }
+      // Signal to fetch and display visitor logs
+      return { type: 'output', target: 'visitors', content: '' };
     },
   },
 

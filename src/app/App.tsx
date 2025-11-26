@@ -11,7 +11,7 @@ import { Terminal, TerminalWindow } from '../shared/ui/terminal';
 import type { TerminalLine } from '../shared/ui/terminal';
 import { parseCommand, getWelcomeMessage } from '../shared/lib/commands';
 import { initTheme, applyTheme, themes, getStoredTheme } from '../shared/lib/themes';
-import { verifyAdminPassword, isAdmin, setAdminSession, logoutAdmin, changeAdminPassword } from '../shared/lib/auth';
+import { verifyAdminPassword, isAdmin, setAdminSession, logoutAdmin, changeAdminPassword, getAuthToken } from '../shared/lib/auth';
 import PortfolioApp from '../features/portfolio/ui/PortfolioApp';
 import BlogApp from '../features/blog/ui/BlogApp';
 import AboutApp from '../features/about/ui/AboutApp';
@@ -48,6 +48,19 @@ const detectInAppBrowser = (): { isInApp: boolean; extraPadding: number } => {
   }
   
   return { isInApp: false, extraPadding: 0 };
+};
+
+// Format time ago string
+const getTimeAgo = (date: Date): string => {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString();
 };
 
 const App: React.FC = () => {
@@ -271,6 +284,46 @@ const App: React.FC = () => {
                 })
                 .catch(() => {
                   addLine({ type: 'output', content: `${role}${role === 'admin' ? ' (elevated)' : ''}` });
+                });
+              break;
+            }
+            // Check for visitors (admin only - fetch visitor logs)
+            if (result.target === 'visitors') {
+              const token = getAuthToken();
+              fetch('/api/visitors', {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+              })
+                .then(res => {
+                  if (!res.ok) throw new Error('Unauthorized');
+                  return res.json();
+                })
+                .then((logs: Array<{ ip: string; timestamp: string; userAgent: string }>) => {
+                  if (logs.length === 0) {
+                    addLine({ type: 'output', content: 'No visitor logs yet.' });
+                    return;
+                  }
+                  // Format the logs nicely
+                  const lines = [
+                    '',
+                    `Recent visitors (${logs.length} entries):`,
+                    '',
+                  ];
+                  logs.slice(0, 20).forEach((log, i) => {
+                    const date = new Date(log.timestamp);
+                    const timeAgo = getTimeAgo(date);
+                    const ua = log.userAgent.length > 50 
+                      ? log.userAgent.slice(0, 50) + '...' 
+                      : log.userAgent;
+                    lines.push(`  ${String(i + 1).padStart(2)}. ${log.ip.padEnd(16)} ${timeAgo.padEnd(14)} ${ua}`);
+                  });
+                  if (logs.length > 20) {
+                    lines.push(`  ... and ${logs.length - 20} more`);
+                  }
+                  lines.push('');
+                  addLines(lines, 'output');
+                })
+                .catch(() => {
+                  addLine({ type: 'error', content: 'Failed to fetch visitor logs' });
                 });
               break;
             }
