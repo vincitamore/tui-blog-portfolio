@@ -146,6 +146,22 @@ app.get('/api/admin/verify', requireAuth, (_req, res) => {
   res.json({ valid: true });
 });
 
+// ============ VISITOR INFO ============
+
+// Get visitor's IP address
+app.get('/api/whoami', (req, res) => {
+  // Get IP from various headers (nginx sets x-forwarded-for)
+  const ip = req.headers['x-forwarded-for'] || 
+             req.headers['x-real-ip'] || 
+             req.socket.remoteAddress || 
+             'unknown';
+  
+  // x-forwarded-for can be a comma-separated list, take the first one
+  const clientIp = Array.isArray(ip) ? ip[0] : ip.split(',')[0].trim();
+  
+  res.json({ ip: clientIp });
+});
+
 // ============ BLOG ENDPOINTS ============
 
 // Get all blog posts (public)

@@ -256,6 +256,24 @@ const App: React.FC = () => {
               addLine({ type: 'contact', content: '' });
               break;
             }
+            // Check for whoami (fetch IP and display)
+            if (result.target === 'whoami') {
+              const role = result.content || 'visitor';
+              // Fetch IP asynchronously
+              fetch('/api/whoami')
+                .then(res => res.json())
+                .then(data => {
+                  const ip = data.ip || 'unknown';
+                  addLine({ 
+                    type: 'output', 
+                    content: `${role}${role === 'admin' ? ' (elevated)' : ''}\nIP: ${ip}` 
+                  });
+                })
+                .catch(() => {
+                  addLine({ type: 'output', content: `${role}${role === 'admin' ? ' (elevated)' : ''}` });
+                });
+              break;
+            }
             if (result.lines) {
               addLines(result.lines, 'output');
             } else if (result.content) {

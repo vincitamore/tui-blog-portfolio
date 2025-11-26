@@ -183,7 +183,8 @@ const commands: Record<string, CommandHandler> = {
     description: 'Display visitor info',
     execute: (_args, context) => ({
       type: 'output',
-      content: context?.isAdmin ? 'admin (elevated)' : 'visitor',
+      target: 'whoami',
+      content: context?.isAdmin ? 'admin' : 'visitor',
     }),
   },
 
