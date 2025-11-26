@@ -105,3 +105,6 @@ dev-dist/
 
 # Logs
 logs/
+
+# Content data (managed per-environment)
+content/*.json
