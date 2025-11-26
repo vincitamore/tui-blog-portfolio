@@ -542,7 +542,7 @@ export const themes: Record<string, TerminalTheme> = {
 };
 
 const THEME_STORAGE_KEY = 'terminal-theme';
-const DEFAULT_THEME = 'dracula';
+const DEFAULT_THEME = 'horizon';
 
 export function getStoredTheme(): string {
   if (typeof window === 'undefined') return DEFAULT_THEME;
