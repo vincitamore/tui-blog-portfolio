@@ -173,7 +173,9 @@ interface TerminalProps {
 // Known commands for making them clickable in output
 const CLICKABLE_COMMANDS = [
   'help', 'ls', 'dir', 'cd', 'portfolio', 'blog', 'about',
-  'theme', 'whoami', 'clear', 'cls', 'neofetch', 'contact', 'skills', 'cat'
+  'theme', 'whoami', 'clear', 'cls', 'neofetch', 'contact', 'skills', 'cat',
+  // Admin commands
+  'visitors', 'passwd', 'logout'
 ];
 
 // Theme names that should be clickable (will run "theme <name>")
