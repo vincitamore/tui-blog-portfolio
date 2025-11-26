@@ -200,101 +200,233 @@
     animation: blink 1s step-end infinite;
   }
 
-  /* Markdown content styling */
-  .markdown-content h1 {
+  /* TUI-Flavored Markdown Styling */
+  
+  /* Headings with ASCII decoration */
+  .markdown-content .tui-heading {
+    font-weight: bold;
+    margin: 1em 0 0.5em;
+    font-family: var(--font-mono);
+  }
+
+  .markdown-content .tui-h1 {
     font-size: 1.5em;
-    font-weight: bold;
-    margin: 1em 0 0.5em;
     color: var(--term-primary);
   }
 
-  .markdown-content h2 {
+  .markdown-content .tui-h2 {
     font-size: 1.25em;
-    font-weight: bold;
-    margin: 1em 0 0.5em;
     color: var(--term-primary);
   }
 
-  .markdown-content h3 {
+  .markdown-content .tui-h3,
+  .markdown-content .tui-h4,
+  .markdown-content .tui-h5,
+  .markdown-content .tui-h6 {
     font-size: 1.1em;
-    font-weight: bold;
-    margin: 0.75em 0 0.5em;
     color: var(--term-secondary);
   }
 
-  .markdown-content p {
+  /* Paragraphs */
+  .markdown-content .tui-paragraph {
     margin: 0.75em 0;
     line-height: 1.6;
   }
 
-  .markdown-content strong {
+  /* Unordered lists with ASCII bullets */
+  .markdown-content .tui-unordered-list {
+    margin: 0.75em 0;
+    padding-left: 0;
+    list-style: none;
+  }
+
+  .markdown-content .tui-unordered-list > .tui-list-item {
+    position: relative;
+    padding-left: 1.5em;
+    margin: 0.25em 0;
+  }
+
+  .markdown-content .tui-unordered-list > .tui-list-item::before {
+    content: '├─';
+    position: absolute;
+    left: 0;
+    color: var(--term-primary);
+  }
+
+  .markdown-content .tui-unordered-list > .tui-list-item:last-child::before {
+    content: '└─';
+  }
+
+  /* Nested unordered lists */
+  .markdown-content .tui-unordered-list .tui-unordered-list {
+    margin: 0.25em 0;
+  }
+
+  .markdown-content .tui-unordered-list .tui-unordered-list > .tui-list-item::before {
+    content: '│ ├─';
+    color: var(--term-muted);
+  }
+
+  .markdown-content .tui-unordered-list .tui-unordered-list > .tui-list-item:last-child::before {
+    content: '│ └─';
+  }
+
+  /* Ordered lists */
+  .markdown-content .tui-ordered-list {
+    margin: 0.75em 0;
+    padding-left: 0;
+    list-style: none;
+    counter-reset: tui-counter;
+  }
+
+  .markdown-content .tui-ordered-list > .tui-list-item {
+    position: relative;
+    padding-left: 2.5em;
+    margin: 0.25em 0;
+    counter-increment: tui-counter;
+  }
+
+  .markdown-content .tui-ordered-list > .tui-list-item::before {
+    content: '[' counter(tui-counter) ']';
+    position: absolute;
+    left: 0;
+    color: var(--term-accent);
+    font-weight: bold;
+  }
+
+  /* Strong/bold text with guillemets */
+  .markdown-content .tui-strong {
     color: var(--term-primary);
     font-weight: bold;
   }
 
-  .markdown-content em {
+  /* Emphasis/italic text */
+  .markdown-content .tui-em {
     font-style: italic;
     color: var(--term-secondary);
   }
 
-  .markdown-content code {
+  /* Inline code with angle brackets */
+  .markdown-content .tui-inline-code {
     background-color: var(--term-selection);
-    padding: 0.125em 0.375em;
+    color: var(--term-accent);
+    padding: 0.125em 0.25em;
     font-family: var(--font-mono);
     font-size: 0.9em;
   }
 
-  .markdown-content pre {
+  /* Code blocks with ASCII border */
+  .markdown-content .tui-codeblock {
+    margin: 1em 0;
+    font-family: var(--font-mono);
+  }
+
+  .markdown-content .tui-code-header,
+  .markdown-content .tui-code-footer {
+    color: var(--term-muted);
+    font-size: 0.85em;
+    overflow: hidden;
+  }
+
+  .markdown-content .tui-code-lang {
+    color: var(--term-accent);
+    margin-left: 0.5em;
+  }
+
+  .markdown-content .tui-code-content {
     background-color: var(--term-selection);
     padding: 1em;
     overflow-x: auto;
-    margin: 1em 0;
+    margin: 0;
+    border-left: 2px solid var(--term-muted);
+    border-right: 2px solid var(--term-muted);
   }
 
-  .markdown-content pre code {
+  .markdown-content .tui-code-content code {
     background: none;
     padding: 0;
+    color: var(--term-foreground);
   }
 
-  .markdown-content ul,
-  .markdown-content ol {
-    margin: 0.75em 0;
-    padding-left: 1.5em;
+  /* Links with brackets */
+  .markdown-content .tui-link {
+    color: var(--term-info);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--term-info);
   }
 
-  .markdown-content li {
-    margin: 0.25em 0;
+  .markdown-content .tui-link:hover {
+    border-bottom-style: solid;
+    text-shadow: 0 0 8px var(--term-info);
   }
 
-  .markdown-content ul li::marker {
-    color: var(--term-primary);
-  }
-
-  .markdown-content ol li::marker {
-    color: var(--term-primary);
-  }
-
-  .markdown-content a {
-    color: var(--term-primary);
-    text-decoration: underline;
-    text-decoration-style: dotted;
-  }
-
-  .markdown-content a:hover {
-    text-decoration-style: solid;
-  }
-
-  .markdown-content blockquote {
-    border-left: 3px solid var(--term-primary);
-    padding-left: 1em;
+  /* Blockquotes with pipe character */
+  .markdown-content .tui-blockquote {
     margin: 1em 0;
+    padding: 0.5em 0 0.5em 1em;
+    border-left: none;
+    position: relative;
     color: var(--term-muted);
     font-style: italic;
   }
 
-  .markdown-content hr {
+  .markdown-content .tui-blockquote::before {
+    content: '│';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    color: var(--term-primary);
+    font-weight: bold;
+    line-height: 1.6;
+  }
+
+  .markdown-content .tui-blockquote p {
+    margin: 0.25em 0;
+  }
+
+  /* Horizontal rule */
+  .markdown-content .tui-hr {
     border: none;
-    border-top: 1px solid var(--term-border);
     margin: 1.5em 0;
+    height: auto;
+    text-align: center;
+    overflow: visible;
+  }
+
+  .markdown-content .tui-hr::before {
+    content: '════════════════════════════════════════';
+    display: block;
+    color: var(--term-muted);
+    font-family: var(--font-mono);
+  }
+
+  /* Legacy fallback styles */
+  .markdown-content h1:not(.tui-heading),
+  .markdown-content h2:not(.tui-heading),
+  .markdown-content h3:not(.tui-heading) {
+    color: var(--term-primary);
+    font-weight: bold;
+  }
+
+  .markdown-content p:not(.tui-paragraph) {
+    margin: 0.75em 0;
+    line-height: 1.6;
+  }
+
+  .markdown-content ul:not(.tui-unordered-list),
+  .markdown-content ol:not(.tui-ordered-list) {
+    margin: 0.75em 0;
+    padding-left: 1.5em;
+  }
+
+  .markdown-content li:not(.tui-list-item) {
+    margin: 0.25em 0;
+  }
+
+  .markdown-content a:not(.tui-link) {
+    color: var(--term-primary);
+    text-decoration: underline;
+    text-decoration-style: dotted;
   }
 }
