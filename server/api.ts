@@ -156,31 +156,49 @@ interface VisitorLog {
 
 const MAX_VISITOR_LOGS = 100; // Keep last 100 visits
 
-// Get visitor's IP address and log the visit
-app.get('/api/whoami', async (req, res) => {
-  // Get IP from various headers (nginx sets x-forwarded-for)
+// Helper to get client IP from request
+function getClientIp(req: Request): string {
   const ip = req.headers['x-forwarded-for'] || 
              req.headers['x-real-ip'] || 
              req.socket.remoteAddress || 
              'unknown';
-  
-  // x-forwarded-for can be a comma-separated list, take the first one
-  const clientIp = Array.isArray(ip) ? ip[0] : ip.split(',')[0].trim();
-  
-  // Log the visit
+  return Array.isArray(ip) ? ip[0] : ip.split(',')[0].trim();
+}
+
+// Helper to log a visit
+async function logVisit(req: Request): Promise<void> {
   try {
     const logs = await readJsonFile<VisitorLog[]>('visitors.json', []);
-    logs.unshift({
-      ip: clientIp,
-      timestamp: new Date().toISOString(),
-      userAgent: (req.headers['user-agent'] || 'unknown').slice(0, 200),
-    });
-    // Keep only the last MAX_VISITOR_LOGS entries
-    await writeJsonFile('visitors.json', logs.slice(0, MAX_VISITOR_LOGS));
+    const clientIp = getClientIp(req);
+    
+    // Don't log duplicate visits from same IP within 5 minutes
+    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+    const recentVisit = logs.find(log => 
+      log.ip === clientIp && new Date(log.timestamp).getTime() > fiveMinutesAgo
+    );
+    
+    if (!recentVisit) {
+      logs.unshift({
+        ip: clientIp,
+        timestamp: new Date().toISOString(),
+        userAgent: (req.headers['user-agent'] || 'unknown').slice(0, 200),
+      });
+      await writeJsonFile('visitors.json', logs.slice(0, MAX_VISITOR_LOGS));
+    }
   } catch {
-    // Don't fail the request if logging fails
+    // Don't fail if logging fails
   }
-  
+}
+
+// Log visit on page load (called automatically by frontend)
+app.post('/api/visit', async (req, res) => {
+  await logVisit(req);
+  res.json({ ok: true });
+});
+
+// Get visitor's IP address
+app.get('/api/whoami', async (req, res) => {
+  const clientIp = getClientIp(req);
   res.json({ ip: clientIp });
 });
 

@@ -95,6 +95,9 @@ const App: React.FC = () => {
     // Detect in-app browsers and set extra padding
     const { extraPadding } = detectInAppBrowser();
     setInAppPadding(extraPadding);
+    
+    // Log visit (fire and forget)
+    fetch('/api/visit', { method: 'POST' }).catch(() => {});
   }, []);
 
   // Auto-type help command on first load (after a brief delay)
