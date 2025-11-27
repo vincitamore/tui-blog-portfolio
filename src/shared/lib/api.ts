@@ -33,11 +33,20 @@ export interface BlogPost {
   excerpt: string;
   content?: string;
   tags?: string[];
+  adminOnly?: boolean;
 }
 
-export async function fetchBlogPosts(): Promise<BlogPost[]> {
+export async function fetchBlogPosts(includeAdminOnly = false): Promise<BlogPost[]> {
   try {
-    const res = await fetch(`${API_URL}/api/blog`);
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    
+    // If admin, include auth token to get admin-only posts
+    if (includeAdminOnly) {
+      const authHeaders = getAuthHeaders();
+      Object.assign(headers, authHeaders);
+    }
+    
+    const res = await fetch(`${API_URL}/api/blog`, { headers });
     if (!res.ok) throw new Error('Failed to fetch posts');
     return res.json();
   } catch (err) {

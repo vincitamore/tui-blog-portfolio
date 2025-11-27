@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 export interface EditorField {
   name: string;
   label: string;
-  type: 'text' | 'textarea' | 'tags';
+  type: 'text' | 'textarea' | 'tags' | 'checkbox';
   placeholder?: string;
   required?: boolean;
 }
@@ -176,7 +176,7 @@ const TuiEditor: React.FC<TuiEditorProps> = ({
               {field.label}
               {field.required && <span style={{ color: 'var(--term-error)' }}> *</span>}
             </label>
-            {field.type === 'textarea' ? (
+            {field.type === 'textarea' && (
               <textarea
                 ref={el => textareaRefs.current[index] = el}
                 value={data[field.name]}
@@ -192,7 +192,8 @@ const TuiEditor: React.FC<TuiEditorProps> = ({
                 }}
                 spellCheck={false}
               />
-            ) : (
+            )}
+            {(field.type === 'text' || field.type === 'tags') && (
               <input
                 ref={el => textareaRefs.current[index] = el}
                 type="text"
@@ -214,6 +215,26 @@ const TuiEditor: React.FC<TuiEditorProps> = ({
               <p className="text-xs shrink-0" style={{ color: 'var(--term-muted)' }}>
                 Separate tags with commas
               </p>
+            )}
+            {field.type === 'checkbox' && (
+              <label
+                className="flex items-center gap-3 cursor-pointer touch-manipulation py-2"
+                onClick={() => handleChange(field.name, data[field.name] === 'true' ? 'false' : 'true')}
+              >
+                <span
+                  className="w-5 h-5 flex items-center justify-center font-mono text-sm border"
+                  style={{
+                    borderColor: index === activeField ? 'var(--term-primary)' : 'var(--term-border)',
+                    backgroundColor: data[field.name] === 'true' ? 'var(--term-primary)' : 'transparent',
+                    color: data[field.name] === 'true' ? 'var(--term-background)' : 'var(--term-muted)',
+                  }}
+                >
+                  {data[field.name] === 'true' ? '✓' : ' '}
+                </span>
+                <span style={{ color: 'var(--term-foreground)' }}>
+                  {field.placeholder || 'Enabled'}
+                </span>
+              </label>
             )}
           </motion.div>
         ))}

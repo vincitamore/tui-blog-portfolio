@@ -214,10 +214,34 @@ app.get('/api/visitors', requireAuth, async (_req, res) => {
 
 // ============ BLOG ENDPOINTS ============
 
-// Get all blog posts (public)
-app.get('/api/blog', async (_req, res) => {
+// Helper to check if request has valid auth (optional - doesn't fail if missing)
+function hasValidAuth(req: Request): boolean {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return false;
+  }
+  const token = authHeader.slice(7);
+  const session = activeSessions.get(token);
+  if (!session) return false;
+  if (Date.now() - session.createdAt > SESSION_DURATION) {
+    activeSessions.delete(token);
+    return false;
+  }
+  return true;
+}
+
+// Get all blog posts (public - filters admin-only unless authenticated)
+app.get('/api/blog', async (req, res) => {
   try {
-    const posts = await readJsonFile('blog.json', []);
+    const posts = await readJsonFile<any[]>('blog.json', []);
+    
+    // If not authenticated, filter out admin-only posts
+    if (!hasValidAuth(req)) {
+      const publicPosts = posts.filter(p => !p.adminOnly);
+      return res.json(publicPosts);
+    }
+    
+    // Admin sees all posts
     res.json(posts);
   } catch (err) {
     res.status(500).json({ error: 'Failed to read posts' });

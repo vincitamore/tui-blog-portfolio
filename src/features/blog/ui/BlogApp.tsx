@@ -31,10 +31,10 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
 
   useEffect(() => {
     setIsLoading(true);
-    fetchBlogPosts()
+    fetchBlogPosts(isAdmin) // Pass isAdmin to include admin-only posts
       .then(setPosts)
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [isAdmin]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -113,6 +113,7 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
         excerpt: stripMarkdown(data.content).substring(0, 150) + '...',
         content: data.content,
         tags: data.tags ? data.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+        adminOnly: data.adminOnly === 'true',
       });
       setPosts(prev => [newPost, ...prev]);
       setIsCreating(false);
@@ -134,6 +135,7 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
         excerpt: stripMarkdown(data.content).substring(0, 150) + '...',
         content: data.content,
         tags: data.tags ? data.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+        adminOnly: data.adminOnly === 'true',
       });
       setPosts(prev => prev.map(p => p.slug === editingPost.slug ? updated : p));
       setViewingPost(updated);
@@ -189,6 +191,7 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
         fields={[
           { name: 'title', label: 'Title', type: 'text', required: true, placeholder: 'Enter post title...' },
           { name: 'tags', label: 'Tags', type: 'tags', placeholder: 'react, typescript, web' },
+          { name: 'adminOnly', label: 'Visibility', type: 'checkbox', placeholder: 'Admin-only (hidden from visitors)' },
           { name: 'content', label: 'Content (Markdown)', type: 'textarea', required: true, placeholder: '# My Post\n\nWrite your content here using **Markdown**...' },
         ]}
         onSave={handleSavePost}
@@ -205,11 +208,13 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
         fields={[
           { name: 'title', label: 'Title', type: 'text', required: true, placeholder: 'Enter post title...' },
           { name: 'tags', label: 'Tags', type: 'tags', placeholder: 'react, typescript, web' },
+          { name: 'adminOnly', label: 'Visibility', type: 'checkbox', placeholder: 'Admin-only (hidden from visitors)' },
           { name: 'content', label: 'Content (Markdown)', type: 'textarea', required: true, placeholder: '# My Post\n\nWrite your content here using **Markdown**...' },
         ]}
         initialData={{
           title: editingPost.title,
           tags: editingPost.tags?.join(', ') || '',
+          adminOnly: editingPost.adminOnly ? 'true' : 'false',
           content: editingPost.content || editingPost.excerpt,
         }}
         onSave={handleUpdatePost}
@@ -277,9 +282,19 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
 
           <article className="space-y-4">
             <header>
-              <h1 className="text-xl font-bold mb-2" style={{ color: 'var(--term-primary)' }}>
-                {viewingPost.title}
-              </h1>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-xl font-bold" style={{ color: 'var(--term-primary)' }}>
+                  {viewingPost.title}
+                </h1>
+                {viewingPost.adminOnly && (
+                  <span 
+                    className="text-xs px-1.5 py-0.5" 
+                    style={{ backgroundColor: 'var(--term-warning)', color: 'var(--term-background)' }}
+                  >
+                    ADMIN ONLY
+                  </span>
+                )}
+              </div>
               <time className="text-sm" style={{ color: 'var(--term-muted)' }}>
                 {format(new Date(viewingPost.date), 'MMMM d, yyyy')}
               </time>
@@ -372,6 +387,14 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
                     >
                       {post.title}
                     </span>
+                    {post.adminOnly && (
+                      <span 
+                        className="text-xs px-1.5 py-0.5" 
+                        style={{ backgroundColor: 'var(--term-warning)', color: 'var(--term-background)' }}
+                      >
+                        ADMIN
+                      </span>
+                    )}
                     <span className="text-sm" style={{ color: 'var(--term-muted)' }}>
                       {format(new Date(post.date), 'MMM d, yyyy')}
                     </span>
