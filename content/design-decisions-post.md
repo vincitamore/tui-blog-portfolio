@@ -109,3 +109,4 @@ Nothing exotic. The interesting stuff is in the presentation layer, not the arch
 That's the gist of it. Not claiming any of this is "best practice" - it's just what made sense for a personal project of this scope. Sometimes simple is good enough.
 
 
+

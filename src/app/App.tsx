@@ -11,7 +11,7 @@ import { Terminal, TerminalWindow } from '../shared/ui/terminal';
 import type { TerminalLine } from '../shared/ui/terminal';
 import { parseCommand, getWelcomeMessage } from '../shared/lib/commands';
 import { initTheme, applyTheme, themes, getStoredTheme } from '../shared/lib/themes';
-import { verifyAdminPassword, isAdmin, setAdminSession, logoutAdmin, changeAdminPassword, getAuthToken } from '../shared/lib/auth';
+import { verifyAdminPassword, setAdminSession, logoutAdmin, changeAdminPassword, getAuthToken, restoreSession } from '../shared/lib/auth';
 import PortfolioApp from '../features/portfolio/ui/PortfolioApp';
 import BlogApp from '../features/blog/ui/BlogApp';
 import AboutApp from '../features/about/ui/AboutApp';
@@ -90,7 +90,6 @@ const App: React.FC = () => {
   useEffect(() => {
     const theme = initTheme();
     setCurrentTheme(theme.name);
-    setAdminMode(isAdmin());
     
     // Detect in-app browsers and set extra padding
     const { extraPadding } = detectInAppBrowser();
@@ -98,6 +97,11 @@ const App: React.FC = () => {
     
     // Log visit (fire and forget)
     fetch('/api/visit', { method: 'POST' }).catch(() => {});
+    
+    // Try to restore admin session from localStorage
+    restoreSession().then((restored) => {
+      setAdminMode(restored);
+    });
   }, []);
 
   // Auto-type help command on first load (after a brief delay)

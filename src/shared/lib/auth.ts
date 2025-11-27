@@ -2,10 +2,31 @@
  * Admin Authentication System
  * Uses server-side session tokens for secure authentication
  * All admin API requests require valid session token
+ * Session persists across page refreshes using localStorage
  */
 
-// Session token stored in memory (cleared on page refresh for security)
+const SESSION_STORAGE_KEY = 'admin_session_token';
+
+// Session token - loaded from localStorage on init
 let sessionToken: string | null = null;
+
+// Initialize from localStorage
+if (typeof window !== 'undefined') {
+  sessionToken = localStorage.getItem(SESSION_STORAGE_KEY);
+}
+
+/**
+ * Save token to localStorage
+ */
+function persistToken(token: string | null): void {
+  if (typeof window === 'undefined') return;
+  
+  if (token) {
+    localStorage.setItem(SESSION_STORAGE_KEY, token);
+  } else {
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+  }
+}
 
 /**
  * Get the current auth token for API requests
@@ -39,6 +60,7 @@ export async function verifyAdminPassword(password: string): Promise<boolean> {
     if (response.ok) {
       const data = await response.json();
       sessionToken = data.token;
+      persistToken(sessionToken);
       return true;
     }
     return false;
@@ -49,11 +71,43 @@ export async function verifyAdminPassword(password: string): Promise<boolean> {
 }
 
 /**
+ * Restore session from localStorage - verifies token is still valid
+ * Returns true if session was successfully restored
+ */
+export async function restoreSession(): Promise<boolean> {
+  // No token stored
+  if (!sessionToken) {
+    return false;
+  }
+  
+  try {
+    // Verify token is still valid with server
+    const response = await fetch('/api/admin/verify', {
+      headers: getAuthHeaders(),
+    });
+    
+    if (response.ok) {
+      return true;
+    }
+    
+    // Token invalid/expired - clear it
+    sessionToken = null;
+    persistToken(null);
+    return false;
+  } catch (e) {
+    // Server error - keep token but return false
+    // (might just be network issue)
+    return false;
+  }
+}
+
+/**
  * Set admin session status (for compatibility - actual session managed by token)
  */
 export function setAdminSession(status: boolean): void {
   if (!status) {
     sessionToken = null;
+    persistToken(null);
   }
 }
 
@@ -79,6 +133,7 @@ export async function logoutAdmin(): Promise<void> {
     }
   }
   sessionToken = null;
+  persistToken(null);
 }
 
 /**
