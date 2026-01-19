@@ -14,6 +14,9 @@
   "dependencies": {
     "@mdx-js/loader": "^3.1.1",
     "@mdx-js/react": "^3.1.1",
+    "@vercel/blob": "^2.0.0",
+    "@vercel/kv": "^3.0.0",
+    "@vercel/node": "^5.5.23",
     "@xstate/react": "^5.0.5",
     "autoprefixer": "^10",
     "cors": "^2.8.5",
@@ -92,7 +95,8 @@
     "test:e2e": "playwright test",
     "generate:sitemap": "tsx scripts/generate-sitemap.ts",
     "generate:rss": "tsx scripts/generate-rss.ts",
-    "generate": "pnpm generate:sitemap && pnpm generate:rss"
+    "generate": "pnpm generate:sitemap && pnpm generate:rss",
+    "migrate:vercel": "tsx scripts/seed-vercel-blob.ts"
   },
   "type": "module",
   "version": "0.1.0"
