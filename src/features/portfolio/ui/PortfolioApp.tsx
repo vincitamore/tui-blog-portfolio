@@ -180,7 +180,11 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
   }, []);
 
   const handleUpdateProject = useCallback(async (data: EditorData) => {
-    if (!editingProject?.id) return;
+    if (!editingProject?.id) {
+      console.error('Cannot update: editingProject.id is missing', editingProject);
+      alert('Error: Project ID is missing. Cannot save.');
+      return;
+    }
     
     setSaveStatus('saving');
     try {
@@ -198,6 +202,7 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
       setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (err) {
       console.error('Failed to update project:', err);
+      alert(`Failed to save: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setSaveStatus('error');
     }
   }, [editingProject]);

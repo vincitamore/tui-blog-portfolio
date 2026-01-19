@@ -4,9 +4,7 @@
   "outputDirectory": "dist",
   "installCommand": "pnpm install",
   "framework": "vite",
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
