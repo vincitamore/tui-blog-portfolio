@@ -14,7 +14,7 @@ This document outlines all changes made to migrate the TUI Blog Portfolio from a
 **New Architecture (Vercel):**
 - Vercel Serverless Functions for API routes
 - Vercel Blob for JSON content storage
-- Vercel KV (Redis) for session storage
+- Vercel KV (Upstash Redis) for session storage
 - Static frontend deployed to Vercel CDN
 
 ---
@@ -25,9 +25,25 @@ This document outlines all changes made to migrate the TUI Blog Portfolio from a
 
 - `vercel.json` - Vercel deployment configuration
 
+**Current vercel.json:**
+```json
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm run build",
+  "outputDirectory": "dist",
+  "installCommand": "pnpm install",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}
+```
+
+> **Important:** Use `rewrites` (not `routes`) to avoid breaking dynamic API routes like `[id].ts`. The rewrite pattern `/((?!api/).*)` sends all non-API routes to the SPA while letting Vercel handle `/api/*` routing automatically.
+
 ### API Functions (Serverless)
 
-All API routes are now in the `/api` directory:
+All API routes are in the `/api` directory:
 
 ```
 api/
@@ -51,13 +67,34 @@ api/
 └── whoami.ts         # GET /api/whoami (IP lookup)
 ```
 
+### Critical: ESM Import Extensions
+
+All imports between API files **must use `.js` extensions** for Node.js ESM compatibility:
+
+```typescript
+// ✅ Correct
+import { readJsonBlob } from '../_lib/storage.js';
+import { verifyAuth } from '../_lib/auth.js';
+
+// ❌ Wrong - will fail with ERR_MODULE_NOT_FOUND
+import { readJsonBlob } from '../_lib/storage';
+```
+
 ### Dependencies Added
 
 ```json
 {
-  "@vercel/blob": "^x.x.x",
-  "@vercel/kv": "^x.x.x",
-  "@vercel/node": "^x.x.x"
+  "@vercel/blob": "^2.0.0",
+  "@vercel/kv": "^3.0.0",
+  "@vercel/node": "^5.5.23"
+}
+```
+
+### Scripts Added
+
+```json
+{
+  "migrate:vercel": "tsx scripts/seed-vercel-blob.ts"
 }
 ```
 
@@ -65,14 +102,17 @@ api/
 
 ## Environment Variables Required on Vercel
 
-Set these in your Vercel project settings (Settings → Environment Variables):
+These are **auto-generated** when you create storage resources through Vercel Dashboard:
 
-| Variable | Description |
-|----------|-------------|
-| `BLOB_READ_WRITE_TOKEN` | Token for Vercel Blob storage (auto-generated when you create a Blob store) |
-| `KV_REST_API_URL` | Vercel KV REST API URL (auto-generated when you create a KV store) |
-| `KV_REST_API_TOKEN` | Vercel KV REST API token (auto-generated) |
-| `KV_REST_API_READ_ONLY_TOKEN` | Vercel KV read-only token (auto-generated) |
+| Variable | Description | Source |
+|----------|-------------|--------|
+| `BLOB_READ_WRITE_TOKEN` | Token for Vercel Blob storage | Blob store creation |
+| `KV_REST_API_URL` | Vercel KV REST API URL | KV store creation |
+| `KV_REST_API_TOKEN` | Vercel KV REST API token | KV store creation |
+| `KV_REST_API_READ_ONLY_TOKEN` | Vercel KV read-only token | KV store creation |
+| `KV_URL` | Redis URL (not used by @vercel/kv) | KV store creation |
+
+> **Important:** You MUST use **Vercel's native KV** (powered by Upstash), NOT external Redis services like Redis Labs. The `@vercel/kv` package requires the REST API endpoints, not raw Redis protocol URLs.
 
 ---
 
@@ -80,45 +120,68 @@ Set these in your Vercel project settings (Settings → Environment Variables):
 
 ### 1. Connect to Vercel
 
-```bash
-# Install Vercel CLI
-npm install -g vercel
+Via GitHub integration (recommended):
+1. Go to [vercel.com/new](https://vercel.com/new)
+2. Import `vincitamore/tui-blog-portfolio`
+3. Vercel auto-detects Vite and configures build
 
-# Login and link project
+Or via CLI:
+```bash
+npm install -g vercel
 vercel login
 vercel link
 ```
 
 ### 2. Create Storage Resources
 
-In the Vercel Dashboard:
+In the Vercel Dashboard → Your Project → **Storage**:
 
-1. Go to your project → Storage
-2. **Create Blob Store**: Click "Create Database" → "Blob" → Name it (e.g., "tui-blog-content")
-3. **Create KV Store**: Click "Create Database" → "KV" → Name it (e.g., "tui-blog-sessions")
+1. **Create Blob Store**: 
+   - Click "Create Database" → "Blob"
+   - Name it (e.g., "tui-blog-content")
+   - Environment variables auto-added
 
-Environment variables will be automatically added to your project.
+2. **Create KV Store** (for sessions):
+   - Click "Create Database" → "KV" 
+   - Name it (e.g., "tui-blog-sessions")
+   - Environment variables auto-added
+   - **Must be Vercel's native KV, not Redis Labs**
 
 ### 3. Migrate Content Data
 
-Run the migration script to upload your existing JSON data to Vercel Blob:
+Set the blob token locally and run migration:
 
-```bash
-# Make sure you have BLOB_READ_WRITE_TOKEN set locally
+```powershell
+# PowerShell
+$env:BLOB_READ_WRITE_TOKEN="your_token_from_vercel_dashboard"
 pnpm run migrate:vercel
 ```
 
-Or manually upload via the Vercel Blob Dashboard, or use the seed script (see `scripts/seed-vercel-blob.ts`).
+```bash
+# Bash
+BLOB_READ_WRITE_TOKEN=your_token_from_vercel_dashboard pnpm run migrate:vercel
+```
+
+This uploads:
+- `content/blog.json` → Vercel Blob
+- `content/portfolio.json` → Vercel Blob
+- `content/admin.json` → Vercel Blob
+- `content/visitors.json` → Vercel Blob
 
 ### 4. Deploy
 
-```bash
-# Deploy to preview
-vercel
+Vercel auto-deploys on git push. Or manually:
 
-# Deploy to production
+```bash
 vercel --prod
 ```
+
+### 5. Test Admin Login
+
+- Navigate to your site
+- Type `sudo admin` in the terminal
+- Default password: `password`
+- Change password after first login!
 
 ---
 
@@ -126,37 +189,84 @@ vercel --prod
 
 | Aspect | VPS (Express) | Vercel (Serverless) |
 |--------|---------------|---------------------|
-| API Server | Express.js on port 3001 | Serverless functions |
-| Data Storage | JSON files on disk | Vercel Blob |
-| Sessions | In-memory Map | Vercel KV (Redis) |
+| API Server | Express.js on port 3001 | Serverless functions in `/api` |
+| Data Storage | JSON files on disk (`/content`) | Vercel Blob (cloud storage) |
+| Sessions | In-memory Map | Vercel KV (Upstash Redis REST API) |
 | Process Manager | PM2 | N/A (managed by Vercel) |
 | SSL | Let's Encrypt + Nginx | Automatic |
 | Scaling | Manual (single server) | Automatic |
+| Cold Starts | None | Possible on first request |
 
 ---
 
 ## Switching Back to VPS
 
-To revert to the VPS deployment:
+### Step 1: Export Data from Vercel Blob
 
-1. **Remove Vercel files** (optional):
-   ```bash
-   rm -rf api/
-   rm vercel.json
-   ```
+Before switching, download your current data from Vercel Blob dashboard or use this script to fetch it:
 
-2. **Remove Vercel dependencies**:
-   ```bash
-   pnpm remove @vercel/blob @vercel/kv @vercel/node
-   ```
+```typescript
+// Run locally with BLOB_READ_WRITE_TOKEN set
+import { list } from '@vercel/blob';
 
-3. **Follow the VPS deployment guide**: See `deploy/DEPLOYMENT.md`
+const { blobs } = await list({ prefix: 'content/', token: process.env.BLOB_READ_WRITE_TOKEN });
+for (const blob of blobs) {
+  const res = await fetch(blob.url);
+  const data = await res.json();
+  // Save to local content/ directory
+  console.log(blob.pathname, data);
+}
+```
 
-4. **Restore the server/api.ts** usage - it's still in place and ready to use
+### Step 2: Remove Vercel Files
 
-The original VPS files are preserved:
-- `server/api.ts` - Express API server (unchanged)
-- `deploy/DEPLOYMENT.md` - VPS setup guide
+```powershell
+# Remove API directory
+Remove-Item -Recurse -Force api/
+
+# Remove Vercel config
+Remove-Item vercel.json
+
+# Remove migration script
+Remove-Item scripts/seed-vercel-blob.ts
+```
+
+### Step 3: Remove Vercel Dependencies
+
+```bash
+pnpm remove @vercel/blob @vercel/kv @vercel/node
+```
+
+### Step 4: Remove Migration Script from package.json
+
+Remove this line from `scripts`:
+```json
+"migrate:vercel": "tsx scripts/seed-vercel-blob.ts"
+```
+
+### Step 5: Revert Frontend Changes (if any)
+
+The file `src/features/portfolio/ui/PortfolioApp.tsx` has added error alerts for debugging. You may want to revert these:
+
+```typescript
+// Remove the alert() calls in handleUpdateProject if desired
+```
+
+### Step 6: Deploy to VPS
+
+Follow `deploy/DEPLOYMENT.md` for full VPS setup:
+
+1. Set up server with Node.js, Nginx, PM2
+2. Clone repo to `/var/www/tui-blog`
+3. Run `pnpm install && pnpm build`
+4. Start API with PM2: `pm2 start ecosystem.config.cjs`
+5. Configure Nginx to proxy `/api` to port 3001
+6. Set up SSL with Certbot
+
+### VPS Files (Preserved & Ready to Use)
+
+- `server/api.ts` - Express API server (unchanged, fully functional)
+- `deploy/DEPLOYMENT.md` - Complete VPS setup guide
 - `deploy/nginx.conf` - Nginx configuration
 - `deploy/setup-server.sh` - Server setup script
 - `deploy/update.sh` - Deployment update script
@@ -164,52 +274,71 @@ The original VPS files are preserved:
 
 ---
 
-## Data Migration
+## Troubleshooting
 
-### Exporting from VPS (if server is still accessible)
+### API returns 500 errors
+- Check Vercel Function logs (Dashboard → Deployments → Functions)
+- Verify `BLOB_READ_WRITE_TOKEN` is set in Environment Variables
+- Make sure all imports use `.js` extensions
 
+### API returns 405 Method Not Allowed
+- This means the wrong route handler is being called
+- Check that `vercel.json` uses `rewrites` not `routes`
+- Dynamic routes like `[id].ts` need Vercel's automatic routing
+
+### API returns 404
+- Check the function exists in `/api` directory
+- Verify file naming matches expected route (`[id].ts` for dynamic)
+- Redeploy after making changes
+
+### Sessions not persisting / Login fails
+- Must use **Vercel's native KV** (not Redis Labs or other providers)
+- The `@vercel/kv` package requires REST API, not Redis protocol
+- Check all `KV_*` environment variables are set
+
+### "ERR_MODULE_NOT_FOUND" in function logs
+- Add `.js` extension to all relative imports in `/api` files
+- Example: `from './storage.js'` not `from './storage'`
+
+### Portfolio/Blog edit not saving
+- Check browser console for errors
+- Verify the PUT request returns 200, not 405
+- If 405: the `vercel.json` routing is misconfigured
+
+### Local Development
+The original VPS setup still works locally:
 ```bash
-# SSH to VPS and copy content files
-scp user@your-vps:/var/www/tui-blog/content/*.json ./content/
+pnpm dev  # Runs Vite + Express API concurrently
 ```
 
-### Importing to Vercel Blob
-
-The migration script reads from local `content/` directory and uploads to Vercel Blob:
-
-```bash
-pnpm run migrate:vercel
-```
-
-### Current Content Files
-
-Your content is stored locally in `content/` directory:
-- `blog.json` - Blog posts
-- `portfolio.json` - Portfolio projects
-- `admin.json` - Admin configuration (password hash)
-- `visitors.json` - Visitor logs
+The frontend (`src/shared/lib/api.ts`) automatically uses `localhost:3001` in development mode.
 
 ---
 
-## Troubleshooting
+## Content Files
 
-### API returns empty data
-- Check that Blob storage is connected and has data
-- Verify `BLOB_READ_WRITE_TOKEN` is set
-- Run the migration script to seed data
+Your content is stored in two places:
 
-### Sessions not persisting
-- Check that KV store is connected
-- Verify all `KV_*` environment variables are set
+**Local (for VPS / development):**
+- `content/blog.json`
+- `content/portfolio.json`
+- `content/admin.json`
+- `content/visitors.json`
 
-### Build fails
-- Make sure all Vercel packages are installed
-- Check that TypeScript compiles without errors
+**Vercel Blob (for production):**
+- `content/blog.json`
+- `content/portfolio.json`
+- `content/admin.json`
+- `content/visitors.json`
 
-### Local Development
-For local development, the original setup still works:
-```bash
-pnpm dev  # Runs both Vite dev server and Express API
-```
+Keep local files in sync by running the migration script after local edits, or export from Blob before switching to VPS.
 
-The frontend API client (`src/shared/lib/api.ts`) automatically uses `localhost:3001` in development.
+---
+
+## Git Commits for This Migration
+
+Key commits for reference:
+1. `feat: add Vercel deployment support` - Initial API functions and config
+2. `fix: add .js extensions for ESM module resolution` - Node.js ESM fix
+3. `fix: update vercel.json routes for API functions` - Initial routing attempt
+4. `fix: use rewrites instead of routes for proper dynamic API routing` - Final routing fix
