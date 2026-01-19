@@ -3,7 +3,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { readJsonBlob, writeJsonBlob, CONTENT_KEYS } from './_lib/storage';
+import { readJsonBlob, writeJsonBlob, CONTENT_KEYS } from './_lib/storage.js';
 
 interface VisitorLog {
   ip: string;

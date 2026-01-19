@@ -3,7 +3,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { generateSessionToken, createSession, verifyPassword } from '../_lib/auth';
+import { generateSessionToken, createSession, verifyPassword } from '../_lib/auth.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers

@@ -3,8 +3,8 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { readJsonBlob, writeJsonBlob, CONTENT_KEYS } from '../_lib/storage';
-import { verifyAuth } from '../_lib/auth';
+import { readJsonBlob, writeJsonBlob, CONTENT_KEYS } from '../_lib/storage.js';
+import { verifyAuth } from '../_lib/auth.js';
 
 interface Project {
   id: string;

@@ -5,32 +5,37 @@
 
 import { put, list, del } from '@vercel/blob';
 
-const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
-
-export interface StorageOptions {
-  token?: string;
-}
-
 /**
  * Read JSON data from Vercel Blob storage
  */
 export async function readJsonBlob<T>(key: string, defaultValue: T): Promise<T> {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  
+  if (!token) {
+    console.error('BLOB_READ_WRITE_TOKEN is not set');
+    throw new Error('Storage not configured: BLOB_READ_WRITE_TOKEN missing');
+  }
+  
   try {
-    const { blobs } = await list({ prefix: key, token: BLOB_TOKEN });
+    const { blobs } = await list({ prefix: key, token });
+    
+    console.log(`Blob list for ${key}:`, blobs.map(b => b.pathname));
     
     if (blobs.length === 0) {
+      console.log(`No blobs found for key: ${key}, returning default`);
       return defaultValue;
     }
     
     const response = await fetch(blobs[0].url);
     if (!response.ok) {
+      console.error(`Failed to fetch blob: ${response.status} ${response.statusText}`);
       return defaultValue;
     }
     
     return await response.json();
   } catch (error) {
     console.error(`Error reading blob ${key}:`, error);
-    return defaultValue;
+    throw error; // Re-throw to surface the actual error
   }
 }
 
@@ -38,19 +43,28 @@ export async function readJsonBlob<T>(key: string, defaultValue: T): Promise<T> 
  * Write JSON data to Vercel Blob storage
  */
 export async function writeJsonBlob(key: string, data: unknown): Promise<void> {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  
+  if (!token) {
+    console.error('BLOB_READ_WRITE_TOKEN is not set');
+    throw new Error('Storage not configured: BLOB_READ_WRITE_TOKEN missing');
+  }
+  
   try {
     // Delete existing blob if it exists
-    const { blobs } = await list({ prefix: key, token: BLOB_TOKEN });
+    const { blobs } = await list({ prefix: key, token });
     for (const blob of blobs) {
-      await del(blob.url, { token: BLOB_TOKEN });
+      await del(blob.url, { token });
     }
     
     // Write new blob
-    await put(key, JSON.stringify(data, null, 2), {
+    const result = await put(key, JSON.stringify(data, null, 2), {
       access: 'public',
       contentType: 'application/json',
-      token: BLOB_TOKEN,
+      token,
     });
+    
+    console.log(`Wrote blob: ${key} -> ${result.url}`);
   } catch (error) {
     console.error(`Error writing blob ${key}:`, error);
     throw error;

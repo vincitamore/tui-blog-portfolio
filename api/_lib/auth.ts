@@ -6,7 +6,7 @@
 import { kv } from '@vercel/kv';
 import crypto from 'crypto';
 import type { VercelRequest } from '@vercel/node';
-import { readJsonBlob, CONTENT_KEYS } from './storage';
+import { readJsonBlob, CONTENT_KEYS } from './storage.js';
 
 const SESSION_DURATION = 24 * 60 * 60; // 24 hours in seconds
 const SESSION_PREFIX = 'session:';

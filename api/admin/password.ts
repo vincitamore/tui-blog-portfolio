@@ -3,8 +3,8 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { verifyAuth, hashPassword, verifyPassword } from '../_lib/auth';
-import { readJsonBlob, writeJsonBlob, CONTENT_KEYS } from '../_lib/storage';
+import { verifyAuth, hashPassword, verifyPassword } from '../_lib/auth.js';
+import { readJsonBlob, writeJsonBlob, CONTENT_KEYS } from '../_lib/storage.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
