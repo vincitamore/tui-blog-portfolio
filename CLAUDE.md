@@ -5,6 +5,17 @@ Terminal-style portfolio and blog application that mimics a real CLI in the brow
 **Live:** https://amore.build
 **Status:** Production - Deployed & Active
 
+## Collaboration Context
+
+This project is part of Alex's broader development ecosystem. For collaboration style, intellectual coordinates, and cross-project awareness:
+
+- **Voice & style**: See `C:\Users\AlexMoyer\Documents\claude-org\context\voice.md`
+- **Project relationships**: See `C:\Users\AlexMoyer\Documents\claude-org\context\project-map.md`
+- **Organization system**: Use `/org` skill for captures, knowledge distillation, and task tracking
+- **After significant work**: Consider whether insights should be captured via `/org learn <topic>`
+
+> If `claude-org` doesn't exist yet, use `claude-misc` as the path.
+
 ## Tech Stack
 
 | Layer | Tech |
