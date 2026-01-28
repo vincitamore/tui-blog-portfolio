@@ -161,7 +161,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // If banned list doesn't exist, continue
     }
 
-    const { content, author, authorToken, parentId } = req.body;
+    const { content, author, authorToken, parentId, website, timestamp } = req.body;
+
+    // Honeypot field - if filled, silently reject (bot trap)
+    if (website && typeof website === 'string' && website.trim()) {
+      // Pretend success to fool bots
+      return res.status(201).json({
+        id: 'honeypot',
+        postSlug: slug,
+        parentId: null,
+        author: 'anonymous',
+        content: '',
+        createdAt: new Date().toISOString(),
+        updatedAt: null,
+        edited: false,
+      });
+    }
+
+    // Time-to-submit check - reject if submitted too fast (< 3 seconds)
+    if (timestamp && typeof timestamp === 'number') {
+      const submissionTime = Date.now() - timestamp;
+      if (submissionTime < 3000) {
+        return res.status(429).json({ error: 'Please take your time writing your comment' });
+      }
+    }
 
     // Validate required fields
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
@@ -175,6 +198,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Basic spam prevention: content length limits
     if (content.length > 10000) {
       return res.status(400).json({ error: 'Comment is too long (max 10000 characters)' });
+    }
+
+    // Rate limiting: check recent comments from this IP
+    try {
+      const comments = await readJsonBlob<Comment[]>(commentsKey, []);
+      const oneMinuteAgo = Date.now() - 60000;
+      const recentFromIp = comments.filter(c =>
+        c.ip === clientIp &&
+        new Date(c.createdAt).getTime() > oneMinuteAgo
+      ).length;
+
+      if (recentFromIp >= 5) {
+        return res.status(429).json({ error: 'Too many comments. Please wait a moment.' });
+      }
+    } catch {
+      // Continue if rate check fails
     }
 
     try {

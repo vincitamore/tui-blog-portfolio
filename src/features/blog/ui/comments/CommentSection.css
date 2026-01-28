@@ -1,0 +1,132 @@
+/**
+ * Comment Section Styles
+ * TUI-specific styling for comments with scaled markdown
+ */
+
+/* Comment markdown adjustments - scale down headings for comment context */
+.comment-markdown h1 {
+  font-size: 1.1em;
+  margin: 0.75em 0 0.5em;
+}
+
+.comment-markdown h2 {
+  font-size: 1.05em;
+  margin: 0.6em 0 0.4em;
+}
+
+.comment-markdown h3,
+.comment-markdown h4,
+.comment-markdown h5,
+.comment-markdown h6 {
+  font-size: 1em;
+  margin: 0.5em 0 0.3em;
+}
+
+/* Smaller code blocks in comments */
+.comment-markdown pre {
+  font-size: 0.85em;
+  padding: 0.5em;
+  max-height: 300px;
+  overflow: auto;
+}
+
+.comment-markdown code {
+  font-size: 0.9em;
+}
+
+/* Constrain images in comments */
+.comment-markdown img {
+  max-width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+}
+
+/* Constrain tables */
+.comment-markdown table {
+  font-size: 0.875em;
+  overflow-x: auto;
+  display: block;
+}
+
+/* Fallback for malformed markdown */
+.comment-fallback {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 0.875em;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+/* Mobile responsiveness for comments */
+@media (max-width: 640px) {
+  /* Reduce nesting indent on mobile */
+  .comment-thread-nested {
+    margin-left: 12px !important;
+  }
+
+  /* Smaller fonts on mobile */
+  .comment-content {
+    font-size: 0.875rem;
+  }
+
+  /* Stack header elements vertically on very small screens */
+  .comment-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  /* Ensure touch targets are adequate */
+  .comment-actions button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.5rem;
+  }
+
+  /* Better textarea sizing on mobile */
+  .comment-editor textarea {
+    min-height: 100px;
+  }
+}
+
+/* Prevent horizontal overflow in comment content */
+.prose-comment {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+.prose-comment pre {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* Reduced spacing for comment prose */
+.prose-comment p {
+  margin: 0.5em 0;
+}
+
+.prose-comment ul,
+.prose-comment ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.prose-comment li {
+  margin: 0.25em 0;
+}
+
+.prose-comment blockquote {
+  margin: 0.5em 0;
+  padding-left: 1em;
+  border-left: 2px solid var(--term-border);
+}
+
+/* Hide horizontal rules in comments - they can be disruptive */
+.prose-comment hr {
+  display: none;
+}

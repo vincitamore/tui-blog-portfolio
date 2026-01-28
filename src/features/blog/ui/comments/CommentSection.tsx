@@ -7,9 +7,28 @@ import {
   updateComment,
   getSavedAuthorName,
   isOwnComment,
+  resetCommentFormLoadTime,
 } from '../../../../shared/lib/api';
 import type { Comment } from '../../../../shared/lib/api';
 import { renderMarkdown } from '../../../../shared/lib/markdown';
+import './CommentSection.css';
+
+// Safe markdown rendering with fallback for malformed content
+function renderCommentMarkdown(content: string): string {
+  try {
+    return renderMarkdown(content);
+  } catch (err) {
+    console.warn('Failed to render markdown, falling back to plain text:', err);
+    // Escape HTML and preserve whitespace
+    const escaped = content
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+    return `<pre class="comment-fallback">${escaped}</pre>`;
+  }
+}
 
 interface CommentSectionProps {
   postSlug: string;
@@ -199,7 +218,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
           <div
             className="prose prose-invert prose-sm max-w-none markdown-content text-sm"
             style={{ color: 'var(--term-foreground)' }}
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(comment.content) }}
+            dangerouslySetInnerHTML={{ __html: renderCommentMarkdown(comment.content) }}
           />
         )}
 
@@ -289,8 +308,10 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postSlug }) => {
   // Build comment tree from flat list
   const commentTree = useMemo(() => buildCommentTree(comments), [comments]);
 
-  // Load comments on mount
+  // Load comments on mount and reset spam timer
   useEffect(() => {
+    resetCommentFormLoadTime();
+
     const loadComments = async () => {
       setIsLoading(true);
       setError(null);
@@ -362,6 +383,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postSlug }) => {
       setContent('');
       setShowPreview(false);
       setReplyingTo(null);
+      // Reset spam timer for next comment
+      resetCommentFormLoadTime();
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Failed to post comment');
     } finally {
@@ -507,7 +530,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postSlug }) => {
                 }}
               >
                 {content ? (
-                  <div dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }} />
+                  <div dangerouslySetInnerHTML={{ __html: renderCommentMarkdown(content) }} />
                 ) : (
                   <span style={{ color: 'var(--term-muted)' }}>Nothing to preview</span>
                 )}

@@ -253,6 +253,13 @@ export async function fetchComments(postSlug: string): Promise<Comment[]> {
   }
 }
 
+// Track when the comment form was loaded (for spam prevention)
+let commentFormLoadTime = Date.now();
+
+export function resetCommentFormLoadTime(): void {
+  commentFormLoadTime = Date.now();
+}
+
 // Create a new comment
 export async function createComment(
   postSlug: string,
@@ -271,6 +278,9 @@ export async function createComment(
     body: JSON.stringify({
       ...comment,
       authorToken,
+      // Spam prevention fields
+      website: '', // Honeypot - should always be empty
+      timestamp: commentFormLoadTime, // Time-to-submit check
     }),
   });
 
