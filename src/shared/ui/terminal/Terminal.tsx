@@ -4,7 +4,7 @@ import { getCommandSuggestions } from '../../lib/commands';
 
 export interface TerminalLine {
   id: string;
-  type: 'command' | 'output' | 'error' | 'info' | 'success' | 'neofetch' | 'skills' | 'contact';
+  type: 'command' | 'output' | 'error' | 'info' | 'success' | 'neofetch' | 'skills' | 'contact' | 'dashboard' | 'comments';
   content: string;
   timestamp?: Date;
 }
@@ -159,6 +159,166 @@ const ContactOutput: React.FC = () => {
   );
 };
 
+// Dashboard data interface
+interface DashboardData {
+  totalComments: number;
+  newSinceLastLogin: number;
+  postsWithComments: number;
+  recentComments: Array<{
+    author: string;
+    postSlug: string;
+    content: string;
+  }>;
+}
+
+// Responsive Dashboard component
+const DashboardOutput: React.FC<{ data: DashboardData; onCommand: (cmd: string) => void }> = ({ data, onCommand }) => {
+  return (
+    <div className="overflow-hidden my-2">
+      <div className="text-xs sm:text-sm leading-relaxed font-mono">
+        {/* Header */}
+        <div className="mb-2 text-center sm:text-left" style={{ color: 'var(--term-accent)' }}>
+          ═══ ADMIN DASHBOARD ═══
+        </div>
+
+        {/* Stats grid - responsive */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-4 mb-3 pl-2">
+          <div>
+            <span style={{ color: 'var(--term-muted)' }}>Total Comments: </span>
+            <span style={{ color: 'var(--term-primary)' }}>{data.totalComments}</span>
+          </div>
+          <div>
+            <span style={{ color: 'var(--term-muted)' }}>New: </span>
+            <span style={{ color: data.newSinceLastLogin > 0 ? 'var(--term-success)' : 'var(--term-foreground)' }}>
+              {data.newSinceLastLogin}
+            </span>
+          </div>
+          <div>
+            <span style={{ color: 'var(--term-muted)' }}>Posts: </span>
+            <span style={{ color: 'var(--term-foreground)' }}>{data.postsWithComments}</span>
+          </div>
+        </div>
+
+        {/* Recent comments */}
+        <div className="mb-2" style={{ color: 'var(--term-accent)' }}>Recent Comments:</div>
+        {data.recentComments.length === 0 ? (
+          <div className="pl-2" style={{ color: 'var(--term-muted)' }}>No comments yet.</div>
+        ) : (
+          <div className="space-y-2 pl-2">
+            {data.recentComments.map((c, i) => (
+              <div key={i} className="text-[11px] sm:text-xs">
+                <div>
+                  <span style={{ color: 'var(--term-primary)' }}>{c.author}</span>
+                  <span style={{ color: 'var(--term-muted)' }}> on </span>
+                  <span style={{ color: 'var(--term-secondary)' }}>{c.postSlug}</span>
+                </div>
+                <div className="pl-2 truncate" style={{ color: 'var(--term-foreground)' }}>
+                  "{c.content.slice(0, 50)}{c.content.length > 50 ? '...' : ''}"
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Quick actions - clickable */}
+        <div className="mt-3 pt-2 border-t flex flex-wrap gap-2 sm:gap-3" style={{ borderColor: 'var(--term-border)' }}>
+          <span style={{ color: 'var(--term-muted)' }}>Commands:</span>
+          {['comments', 'visitors', 'ban', 'claude-org'].map(cmd => (
+            <button
+              key={cmd}
+              onClick={() => onCommand(cmd)}
+              className="underline decoration-dotted hover:decoration-solid touch-manipulation"
+              style={{ color: 'var(--term-accent)' }}
+            >
+              {cmd}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Comment data for display
+interface CommentDisplayData {
+  id: string;
+  author: string;
+  postSlug: string;
+  content: string;
+  ip: string;
+  createdAt: string;
+  isNew: boolean;
+}
+
+// Responsive Comments list component with inline actions
+const CommentsOutput: React.FC<{
+  comments: CommentDisplayData[];
+  total: number;
+  onCommand: (cmd: string) => void;
+}> = ({ comments, total, onCommand }) => {
+  return (
+    <div className="overflow-hidden my-2">
+      <div className="text-xs sm:text-sm leading-relaxed font-mono">
+        {/* Header */}
+        <div className="mb-2" style={{ color: 'var(--term-accent)' }}>
+          Comments ({total} total):
+        </div>
+
+        {comments.length === 0 ? (
+          <div className="pl-2" style={{ color: 'var(--term-muted)' }}>No comments yet.</div>
+        ) : (
+          <div className="space-y-3">
+            {comments.map((c, i) => (
+              <div key={c.id} className="pl-2 text-[11px] sm:text-xs border-l-2" style={{ borderColor: c.isNew ? 'var(--term-success)' : 'var(--term-border)' }}>
+                {/* Author & post */}
+                <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                  <span style={{ color: 'var(--term-muted)' }}>{i + 1}.</span>
+                  <span style={{ color: 'var(--term-primary)' }}>{c.author}</span>
+                  <span style={{ color: 'var(--term-muted)' }}>on</span>
+                  <span style={{ color: 'var(--term-secondary)' }}>{c.postSlug}</span>
+                  {c.isNew && (
+                    <span className="px-1" style={{ color: 'var(--term-success)', backgroundColor: 'var(--term-selection)' }}>[NEW]</span>
+                  )}
+                </div>
+
+                {/* Content preview */}
+                <div className="pl-4 my-1 truncate" style={{ color: 'var(--term-foreground)' }}>
+                  "{c.content.slice(0, 80)}{c.content.length > 80 ? '...' : ''}"
+                </div>
+
+                {/* Actions row */}
+                <div className="pl-4 flex flex-wrap gap-2 sm:gap-3">
+                  <span style={{ color: 'var(--term-muted)' }} className="text-[10px]">IP: {c.ip}</span>
+                  <button
+                    onClick={() => onCommand(`delete-comment ${c.postSlug} ${c.id}`)}
+                    className="underline decoration-dotted hover:decoration-solid touch-manipulation px-1"
+                    style={{ color: 'var(--term-error)' }}
+                  >
+                    [delete]
+                  </button>
+                  <button
+                    onClick={() => onCommand(`ban ${c.ip}`)}
+                    className="underline decoration-dotted hover:decoration-solid touch-manipulation px-1"
+                    style={{ color: 'var(--term-warning, var(--term-accent))' }}
+                  >
+                    [ban ip]
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {total > comments.length && (
+          <div className="mt-2 pl-2" style={{ color: 'var(--term-muted)' }}>
+            ... and {total - comments.length} more
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 interface TerminalProps {
   lines: TerminalLine[];
   prompt?: string;
@@ -177,7 +337,7 @@ const CLICKABLE_COMMANDS = [
   'help', 'ls', 'dir', 'cd', 'portfolio', 'blog', 'about',
   'theme', 'whoami', 'clear', 'cls', 'neofetch', 'contact', 'skills', 'cat',
   // Admin commands
-  'visitors', 'passwd', 'logout'
+  'visitors', 'passwd', 'logout', 'dashboard', 'comments', 'ban', 'unban', 'delete-comment', 'claude-org'
 ];
 
 // Theme names that should be clickable (will run "theme <name>")
@@ -500,7 +660,7 @@ const Terminal: React.FC<TerminalProps> = ({
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.15 }}
-              className={line.type === 'neofetch' || line.type === 'skills' ? '' : `whitespace-pre-wrap break-words ${getLineColor(line.type)}`}
+              className={['neofetch', 'skills', 'dashboard', 'comments'].includes(line.type) ? '' : `whitespace-pre-wrap break-words ${getLineColor(line.type)}`}
             >
               {line.type === 'command' && (
                 <span className="text-[var(--term-muted)]">
@@ -524,6 +684,28 @@ const Terminal: React.FC<TerminalProps> = ({
                 <SkillsOutput />
               ) : line.type === 'contact' ? (
                 <ContactOutput />
+              ) : line.type === 'dashboard' ? (
+                <DashboardOutput
+                  data={(() => {
+                    try {
+                      return JSON.parse(line.content);
+                    } catch {
+                      return { totalComments: 0, newSinceLastLogin: 0, postsWithComments: 0, recentComments: [] };
+                    }
+                  })()}
+                  onCommand={onCommand}
+                />
+              ) : line.type === 'comments' ? (
+                <CommentsOutput
+                  {...(() => {
+                    try {
+                      return JSON.parse(line.content);
+                    } catch {
+                      return { comments: [], total: 0 };
+                    }
+                  })()}
+                  onCommand={onCommand}
+                />
               ) : line.type === 'output' ? (
                 renderClickableOutput(line.content, onCommand)
               ) : (

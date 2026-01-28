@@ -191,39 +191,21 @@ const App: React.FC = () => {
   const showDashboard = useCallback(async () => {
     try {
       const data = await fetchAdminComments();
-      const lines = [
-        '',
-        '╔════════════════════════════════════════════════════════════════╗',
-        '║                      ADMIN DASHBOARD                          ║',
-        '╠════════════════════════════════════════════════════════════════╣',
-        `║  Total Comments:        ${String(data.totalComments).padEnd(38)}║`,
-        `║  New Since Last Login:  ${String(data.newSinceLastLogin).padEnd(38)}║`,
-        `║  Posts With Comments:   ${String(Object.keys(data.commentsByPost).length).padEnd(38)}║`,
-        '╠════════════════════════════════════════════════════════════════╣',
-        '║  Recent Comments:                                              ║',
-      ];
-
-      if (data.comments.length === 0) {
-        lines.push('║    No comments yet.                                            ║');
-      } else {
-        data.comments.slice(0, 5).forEach(c => {
-          const preview = c.content.slice(0, 40).replace(/\n/g, ' ');
-          const truncated = preview.length < c.content.length ? preview + '...' : preview;
-          lines.push(`║    • ${c.author.slice(0, 12).padEnd(12)} on ${c.postSlug.slice(0, 15).padEnd(15)} ║`);
-          lines.push(`║      "${truncated.padEnd(42)}" ║`);
-        });
-      }
-
-      lines.push('╠════════════════════════════════════════════════════════════════╣');
-      lines.push('║  Commands: dashboard | comments | ban | unban | delete-comment ║');
-      lines.push('╚════════════════════════════════════════════════════════════════╝');
-      lines.push('');
-
-      addLines(lines, 'output');
-    } catch (err) {
+      const dashboardData = {
+        totalComments: data.totalComments,
+        newSinceLastLogin: data.newSinceLastLogin,
+        postsWithComments: Object.keys(data.commentsByPost).length,
+        recentComments: data.comments.slice(0, 5).map(c => ({
+          author: c.author,
+          postSlug: c.postSlug,
+          content: c.content,
+        })),
+      };
+      addLine({ type: 'dashboard', content: JSON.stringify(dashboardData) });
+    } catch {
       addLine({ type: 'error', content: 'Failed to load dashboard' });
     }
-  }, [addLine, addLines]);
+  }, [addLine]);
 
   // Handle admin login
   const handleAdminLogin = useCallback(() => {
@@ -410,34 +392,19 @@ const App: React.FC = () => {
             if (result.target === 'comments') {
               fetchAdminComments()
                 .then(data => {
-                  if (data.comments.length === 0) {
-                    addLine({ type: 'output', content: 'No comments yet.' });
-                    return;
-                  }
-                  const lines = [
-                    '',
-                    `Recent comments (${data.comments.length} total):`,
-                    '',
-                  ];
-                  data.comments.slice(0, 20).forEach((c, i) => {
-                    const date = new Date(c.createdAt);
-                    const timeAgo = getTimeAgo(date);
-                    const isNew = new Date(c.createdAt).getTime() > new Date(data.lastLogin).getTime();
-                    const newBadge = isNew ? ' [NEW]' : '';
-                    lines.push(`  ${String(i + 1).padStart(2)}. ${c.author.padEnd(15)} ${timeAgo.padEnd(12)} ${c.postSlug}${newBadge}`);
-                    lines.push(`      ID: ${c.id}  IP: ${c.ip}`);
-                    const preview = c.content.slice(0, 60).replace(/\n/g, ' ');
-                    lines.push(`      "${preview}${c.content.length > 60 ? '...' : ''}"`);
-                    lines.push('');
-                  });
-                  if (data.comments.length > 20) {
-                    lines.push(`  ... and ${data.comments.length - 20} more`);
-                    lines.push('');
-                  }
-                  lines.push('  Use: delete-comment <post-slug> <comment-id>');
-                  lines.push('  Use: ban <ip> [reason]');
-                  lines.push('');
-                  addLines(lines, 'output');
+                  const commentsData = {
+                    comments: data.comments.slice(0, 20).map(c => ({
+                      id: c.id,
+                      author: c.author,
+                      postSlug: c.postSlug,
+                      content: c.content.replace(/\n/g, ' '),
+                      ip: c.ip,
+                      createdAt: c.createdAt,
+                      isNew: new Date(c.createdAt).getTime() > new Date(data.lastLogin).getTime(),
+                    })),
+                    total: data.comments.length,
+                  };
+                  addLine({ type: 'comments', content: JSON.stringify(commentsData) });
                 })
                 .catch(() => {
                   addLine({ type: 'error', content: 'Failed to fetch comments' });
