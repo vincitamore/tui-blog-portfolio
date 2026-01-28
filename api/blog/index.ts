@@ -28,6 +28,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
+    // Disable caching to always get fresh data
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     try {
       const posts = await readJsonBlob<BlogPost[]>(CONTENT_KEYS.BLOG, []);
       const isAdmin = await verifyAuth(req);

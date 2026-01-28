@@ -35,14 +35,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
+    // Disable caching to always get fresh data
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     try {
       const projects = await readJsonBlob<Project[]>(CONTENT_KEYS.PORTFOLIO, []);
       const project = projects.find(p => p.id === id);
-      
+
       if (!project) {
         return res.status(404).json({ error: 'Project not found' });
       }
-      
+
       return res.json(project);
     } catch (error) {
       console.error('Error fetching project:', error);

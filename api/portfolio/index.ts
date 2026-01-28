@@ -46,6 +46,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
+    // Disable caching to always get fresh data
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     try {
       const projects = await readJsonBlob<Project[]>(CONTENT_KEYS.PORTFOLIO, []);
       return res.json(projects);
