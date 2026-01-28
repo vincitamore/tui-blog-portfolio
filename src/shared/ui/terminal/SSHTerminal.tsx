@@ -74,35 +74,40 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     window.addEventListener('resize', checkMobile);
 
     // Visual viewport API for mobile keyboard handling
+    // Key insight: padding doesn't shrink flex children - we need explicit height
     const viewport = window.visualViewport;
     if (viewport) {
       const handleViewportResize = () => {
-        // When keyboard opens, viewport height shrinks
         const wrapper = document.querySelector('.ssh-terminal-wrapper') as HTMLElement;
-        if (wrapper) {
-          const keyboardHeight = window.innerHeight - viewport.height;
-          if (keyboardHeight > 100) {
-            // Keyboard is likely open - adjust padding
-            wrapper.style.paddingBottom = `${60 + keyboardHeight}px`;
-            wrapper.classList.add('keyboard-open');
-          } else {
-            // Keyboard closed
-            wrapper.style.paddingBottom = '';
-            wrapper.classList.remove('keyboard-open');
-          }
-          // Trigger xterm fit after layout settles - 100ms is more reliable
-          // than 50ms for mobile keyboard transitions
-          setTimeout(() => {
-            if (fitAddonRef.current && xtermRef.current) {
-              fitAddonRef.current.fit();
-              // Send new size to server
-              const term = xtermRef.current;
-              if (term.cols && term.rows) {
-                resizeRef.current(term.cols, term.rows);
-              }
-            }
-          }, 100);
+        if (!wrapper) return;
+
+        const keyboardHeight = window.innerHeight - viewport.height;
+        const commandBarHeight = 60; // Height of MobileCommandBar
+        const safeArea = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab') || '0', 10);
+
+        if (keyboardHeight > 100) {
+          // Keyboard is open - set explicit height to visual viewport minus command bar
+          // This forces the terminal to fit within visible area
+          const availableHeight = viewport.height - commandBarHeight - safeArea;
+          wrapper.style.height = `${availableHeight}px`;
+          wrapper.classList.add('keyboard-open');
+        } else {
+          // Keyboard closed - remove explicit height, let flex take over
+          wrapper.style.height = '';
+          wrapper.classList.remove('keyboard-open');
         }
+
+        // Trigger xterm fit after layout settles
+        setTimeout(() => {
+          if (fitAddonRef.current && xtermRef.current) {
+            fitAddonRef.current.fit();
+            // Send new size to server
+            const term = xtermRef.current;
+            if (term.cols && term.rows) {
+              resizeRef.current(term.cols, term.rows);
+            }
+          }
+        }, 100);
       };
 
       viewport.addEventListener('resize', handleViewportResize);

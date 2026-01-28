@@ -11,6 +11,8 @@
   background: var(--term-background, #1a1a2e);
   /* Prevent pull-to-refresh on mobile */
   overscroll-behavior: none;
+  /* Expose safe area for JS to read */
+  --sab: env(safe-area-inset-bottom, 0px);
 }
 
 /* Status bar */
@@ -142,8 +144,16 @@
 /* Mobile: account for command bar */
 @media (max-width: 767px) {
   .ssh-terminal-wrapper {
-    /* Space for command bar + safe area */
+    /* Default: leave space for command bar + safe area when keyboard closed */
+    /* When keyboard opens, JS sets explicit height instead */
     padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* When keyboard is open, JS controls height - remove padding */
+  .ssh-terminal-wrapper.keyboard-open {
+    padding-bottom: 0;
+    /* Ensure flex children respect the explicit height */
+    overflow: hidden;
   }
 
   /* Slightly smaller font on mobile for more content */

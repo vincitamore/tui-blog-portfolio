@@ -20,9 +20,12 @@ const TerminalWindow: React.FC<TerminalWindowProps> = ({
 }) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, rotateX: 2 }}
-      animate={{ opacity: 1, y: 0, rotateX: 0 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      // Note: All transform-based animations (y, rotateX, scale) removed.
+      // ANY transform (even translateY(0)) creates a containing block
+      // that breaks xterm's absolute textarea positioning on mobile.
       className={`flex flex-col overflow-hidden rounded-lg ${className}`}
       style={{
         backgroundColor: 'var(--term-background)',
