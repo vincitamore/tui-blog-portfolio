@@ -24,6 +24,38 @@
   /* Transform set dynamically via style attribute */
 }
 
+/* Input row - text input for capturing keyboard */
+.mobile-command-bar-input-row {
+  margin-bottom: 8px;
+}
+
+.mobile-cmd-input {
+  width: 100%;
+  padding: 12px 14px;
+  font-family: 'JetBrains Mono', Menlo, Monaco, Consolas, monospace;
+  font-size: 16px; /* Prevents iOS zoom on focus */
+  color: var(--term-foreground);
+  background: var(--term-selection);
+  border: 1px solid var(--term-border);
+  border-radius: 6px;
+  outline: none;
+  /* Disable all auto-features */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.mobile-cmd-input:focus {
+  border-color: var(--term-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--term-primary) 30%, transparent);
+}
+
+.mobile-cmd-input::placeholder {
+  color: var(--term-muted);
+  opacity: 0.7;
+}
+
+/* Button row */
 .mobile-command-bar-row {
   display: flex;
   align-items: center;

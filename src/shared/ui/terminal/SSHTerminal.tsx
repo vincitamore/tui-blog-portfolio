@@ -91,7 +91,7 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
         }
 
         const keyboardHeight = window.innerHeight - viewport.height;
-        const commandBarHeight = 60; // Height of MobileCommandBar
+        const commandBarHeight = 120; // Height of MobileCommandBar (input row + button row)
         const safeArea = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab') || '0', 10);
 
         // ALWAYS set explicit height on mobile - the command bar is position:fixed
@@ -348,12 +348,21 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     }, 100);
   }, []);
 
-  // Modified click handler to ignore clicks during/after scroll
+  // Ref for the mobile input
+  const mobileInputRef = useRef<HTMLInputElement>(null);
+
+  // Modified click handler - on mobile, focus the command bar input instead of xterm
   const handleContainerClick = useCallback(() => {
-    if (!touchScrolling.current && xtermRef.current) {
+    if (touchScrolling.current) return;
+
+    if (isMobile && mobileInputRef.current) {
+      // On mobile, focus our controlled input in the command bar
+      mobileInputRef.current.focus();
+    } else if (xtermRef.current) {
+      // On desktop, focus xterm directly
       xtermRef.current.focus();
     }
-  }, []);
+  }, [isMobile]);
 
   // Get status text
   const getStatusText = () => {
@@ -399,11 +408,12 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
         onTouchEnd={handleTouchEnd}
       />
 
-      {/* Mobile command bar */}
+      {/* Mobile command bar - handles all input on mobile */}
       <MobileCommandBar
         visible={showCommandBar}
         onKey={handleMobileKey}
         onEscape={handleMobileEscape}
+        inputRef={mobileInputRef}
       />
     </div>
   );
