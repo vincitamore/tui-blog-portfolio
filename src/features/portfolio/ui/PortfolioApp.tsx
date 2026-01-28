@@ -56,9 +56,13 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
     loadData();
   }, []);
 
-  // Handle direct URL navigation (when user lands on /portfolio/slug directly)
+  // Sync viewingProject state with URL slug
   useEffect(() => {
-    if (!slug) return;
+    // URL is /portfolio with no slug - clear viewing state
+    if (!slug) {
+      setViewingProject(null);
+      return;
+    }
 
     const loadProject = async () => {
       const project = await fetchProjectBySlug(slug);
