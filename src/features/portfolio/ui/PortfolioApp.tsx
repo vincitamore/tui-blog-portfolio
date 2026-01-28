@@ -408,7 +408,7 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
             {/* Render full content if available, otherwise just description */}
             {viewingProject.content ? (
               <div
-                className="tui-markdown prose prose-invert max-w-none"
+                className="prose prose-invert max-w-none leading-relaxed markdown-content"
                 style={{ color: 'var(--term-foreground)' }}
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(viewingProject.content) }}
               />
