@@ -38,9 +38,9 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
   const viewProject = useCallback((project: Project | null) => {
     setViewingProject(project);
     if (project?.slug) {
-      navigate(`/portfolio/${project.slug}`, { replace: true });
+      navigate(`/portfolio/${project.slug}`);
     } else if (!project) {
-      navigate('/portfolio', { replace: true });
+      navigate('/portfolio');
     }
   }, [navigate]);
 
