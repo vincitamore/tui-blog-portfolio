@@ -714,7 +714,7 @@ const App: React.FC = () => {
           maxHeight: `calc(100dvh - 1rem - ${inAppPadding}px)`
         }}
       >
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout">
           <Routes location={location} key={currentScreen}>
             <Route path="/" element={TerminalScreen} />
             <Route path="/portfolio/*" element={
