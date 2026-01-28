@@ -19,7 +19,9 @@ interface PortfolioAppProps {
  * Touch-friendly navigation for mobile users
  */
 const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) => {
-  const { slug } = useParams<{ slug?: string }>();
+  // With route path="/portfolio/*", the slug is in params['*'], not params.slug
+  const params = useParams();
+  const slug = params['*'] || undefined;
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
