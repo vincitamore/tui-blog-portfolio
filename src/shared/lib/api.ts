@@ -397,3 +397,20 @@ export async function unbanIp(ip: string): Promise<void> {
     throw new Error(data.error || 'Failed to unban IP');
   }
 }
+
+// ============ SSH SESSION API ============
+
+export interface SSHSession {
+  token: string;
+  wsUrl: string;
+  expiresAt: number;
+}
+
+// Request SSH session token (admin only)
+export async function requestSSHSession(): Promise<SSHSession> {
+  const res = await fetch(`${API_URL}/api/ssh/session`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(res);
+}

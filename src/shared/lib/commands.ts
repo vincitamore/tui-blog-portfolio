@@ -74,6 +74,7 @@ const commands: Record<string, CommandHandler> = {
           '  ban <ip>          Ban an IP address',
           '  unban <ip>        Unban an IP address',
           '  delete-comment    Delete a comment (interactive)',
+          '  claude-org        Connect to Claude Code via SSH',
           '  passwd            Change admin password',
           '  logout            Exit admin session',
         ] : []),
@@ -319,6 +320,17 @@ const commands: Record<string, CommandHandler> = {
     },
   },
 
+  'claude-org': {
+    description: 'Connect to Claude Code session via SSH',
+    execute: (_args, context) => {
+      if (!context?.isAdmin) {
+        return { type: 'error', content: 'Permission denied. Admin only.' };
+      }
+      // Signal to initiate SSH connection - App.tsx will handle
+      return { type: 'output', target: 'ssh_connect', content: '' };
+    },
+  },
+
   neofetch: {
     description: 'System information',
     execute: (_args, context) => {
@@ -422,7 +434,7 @@ export function getWelcomeMessage(): { header: string; footer: string } {
 }
 
 // Admin-only commands that should only appear in suggestions when admin
-const adminOnlyCommands = ['dashboard', 'visitors', 'comments', 'ban', 'unban', 'delete-comment', 'passwd', 'logout', 'exit'];
+const adminOnlyCommands = ['dashboard', 'visitors', 'comments', 'ban', 'unban', 'delete-comment', 'claude-org', 'passwd', 'logout', 'exit'];
 
 export function getCommandSuggestions(input: string, isAdmin = false): string[] {
   const lower = input.toLowerCase();

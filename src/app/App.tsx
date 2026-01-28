@@ -8,12 +8,13 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Terminal, TerminalWindow } from '../shared/ui/terminal';
+import { Terminal, TerminalWindow, SSHTerminal } from '../shared/ui/terminal';
 import type { TerminalLine } from '../shared/ui/terminal';
 import { parseCommand, getWelcomeMessage } from '../shared/lib/commands';
 import { initTheme, applyTheme, themes, getStoredTheme } from '../shared/lib/themes';
 import { verifyAdminPassword, setAdminSession, logoutAdmin, changeAdminPassword, getAuthToken, restoreSession } from '../shared/lib/auth';
-import { fetchAdminComments, banIp, unbanIp, deleteComment } from '../shared/lib/api';
+import { fetchAdminComments, banIp, unbanIp, deleteComment, requestSSHSession } from '../shared/lib/api';
+import type { SSHSession } from '../shared/lib/api';
 import PortfolioApp from '../features/portfolio/ui/PortfolioApp';
 import BlogApp from '../features/blog/ui/BlogApp';
 import AboutApp from '../features/about/ui/AboutApp';
@@ -98,6 +99,10 @@ const App: React.FC = () => {
   const [autoTypeCommand, setAutoTypeCommand] = useState<string | undefined>(undefined);
   const [hasAutoTyped, setHasAutoTyped] = useState(false);
   const [inAppPadding, setInAppPadding] = useState(0);
+
+  // SSH mode state
+  const [sshMode, setSSHMode] = useState(false);
+  const [sshSession, setSSHSession] = useState<SSHSession | null>(null);
   
   // Password change state
   const [showPasswordChange, setShowPasswordChange] = useState(false);
@@ -483,6 +488,20 @@ const App: React.FC = () => {
               }
               break;
             }
+            // SSH connect command
+            if (result.target === 'ssh_connect') {
+              addLine({ type: 'info', content: 'Requesting SSH session...' });
+              requestSSHSession()
+                .then((session) => {
+                  setSSHSession(session);
+                  setSSHMode(true);
+                  addLine({ type: 'success', content: 'SSH session established. Connecting...' });
+                })
+                .catch((err) => {
+                  addLine({ type: 'error', content: err.message || 'Failed to create SSH session' });
+                });
+              break;
+            }
             if (result.lines) {
               addLines(result.lines, 'output');
             } else if (result.content) {
@@ -534,6 +553,18 @@ const App: React.FC = () => {
     addLine({ type: 'info', content: 'Returned to terminal' });
     navigate('/');
   }, [addLine, navigate]);
+
+  // Handle SSH disconnect
+  const handleSSHDisconnect = useCallback(() => {
+    setSSHMode(false);
+    setSSHSession(null);
+    addLine({ type: 'info', content: 'SSH session ended' });
+  }, [addLine]);
+
+  // Handle SSH error
+  const handleSSHError = useCallback((message: string) => {
+    addLine({ type: 'error', content: `SSH error: ${message}` });
+  }, [addLine]);
 
   // Welcome message component - ASCII art stays small, text below is larger on mobile
   const welcomeBanner = getWelcomeMessage();
@@ -785,18 +816,27 @@ const App: React.FC = () => {
       transition={{ duration: 0.2 }}
       className="h-full"
     >
-      <Terminal
-        lines={lines}
-        prompt="~"
-        username={adminMode ? 'admin' : 'visitor'}
-        onCommand={handleCommand}
-        isProcessing={isProcessing}
-        welcomeMessage={WelcomeMessage}
-        autoTypeCommand={autoTypeCommand}
-        onAutoTypeComplete={handleAutoTypeComplete}
-        disableFocus={showPasswordPrompt || showPasswordChange}
-        isAdmin={adminMode}
-      />
+      {sshMode && sshSession ? (
+        <SSHTerminal
+          wsUrl={sshSession.wsUrl}
+          token={sshSession.token}
+          onDisconnect={handleSSHDisconnect}
+          onError={handleSSHError}
+        />
+      ) : (
+        <Terminal
+          lines={lines}
+          prompt="~"
+          username={adminMode ? 'admin' : 'visitor'}
+          onCommand={handleCommand}
+          isProcessing={isProcessing}
+          welcomeMessage={WelcomeMessage}
+          autoTypeCommand={autoTypeCommand}
+          onAutoTypeComplete={handleAutoTypeComplete}
+          disableFocus={showPasswordPrompt || showPasswordChange}
+          isAdmin={adminMode}
+        />
+      )}
     </motion.div>
   );
 

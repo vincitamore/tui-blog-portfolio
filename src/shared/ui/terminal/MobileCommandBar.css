@@ -1,0 +1,96 @@
+/**
+ * Mobile Command Bar Styles
+ * Fixed bar at bottom with modifier keys and arrows
+ */
+
+.mobile-command-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary, #1a1a2e);
+  border-top: 1px solid var(--border-color, #333);
+  padding: 8px;
+  z-index: 1000;
+  /* Safe area for iOS */
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+
+.mobile-command-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-cmd-btn {
+  flex-shrink: 0;
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fg-primary, #e0e0e0);
+  background: var(--bg-tertiary, #252536);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 6px;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.1s, border-color 0.1s;
+}
+
+.mobile-cmd-btn:active {
+  background: var(--accent-color, #6366f1);
+  border-color: var(--accent-color, #6366f1);
+}
+
+/* Modifier buttons when active */
+.mobile-cmd-btn.mobile-cmd-mod.active {
+  background: var(--accent-color, #6366f1);
+  border-color: var(--accent-color, #6366f1);
+  color: var(--fg-on-accent, #fff);
+}
+
+/* Escape button - slightly different color */
+.mobile-cmd-btn.mobile-cmd-esc {
+  background: var(--bg-warning, #4a3f28);
+  border-color: var(--border-warning, #6b5a3d);
+}
+
+.mobile-cmd-btn.mobile-cmd-esc:active {
+  background: var(--warning-color, #f59e0b);
+}
+
+/* Arrow buttons - square */
+.mobile-cmd-btn.mobile-cmd-arrow {
+  padding: 10px 12px;
+  min-width: 40px;
+  text-align: center;
+}
+
+/* Spacer to push arrows to the right */
+.mobile-cmd-spacer {
+  flex: 1;
+  min-width: 8px;
+}
+
+/* Hide on desktop */
+@media (min-width: 768px) {
+  .mobile-command-bar {
+    display: none;
+  }
+}
+
+/* Smaller padding on very small screens */
+@media (max-width: 380px) {
+  .mobile-cmd-btn {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .mobile-command-bar {
+    padding: 6px;
+  }
+}
