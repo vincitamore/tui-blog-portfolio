@@ -18,16 +18,21 @@ export async function readJsonBlob<T>(key: string, defaultValue: T): Promise<T> 
   
   try {
     const { blobs } = await list({ prefix: key, token });
-    
-    console.log(`Blob list for ${key}:`, blobs.map(b => b.pathname));
-    
+
+    console.log(`Blob list for ${key}: ${blobs.length} blob(s)`);
+
     if (blobs.length === 0) {
       console.log(`No blobs found for key: ${key}, returning default`);
       return defaultValue;
     }
-    
+
+    // Use the most recently uploaded blob (last in list by upload time)
+    const latest = blobs.sort((a, b) =>
+      new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+    )[0];
+
     // Add cache-busting to avoid CDN stale reads
-    const response = await fetch(blobs[0].url, {
+    const response = await fetch(latest.url, {
       cache: 'no-store',
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -49,10 +54,12 @@ export async function readJsonBlob<T>(key: string, defaultValue: T): Promise<T> 
 /**
  * Write JSON data to Vercel Blob storage
  *
- * Uses addRandomSuffix: false for stable blob paths. This means put()
- * overwrites the existing blob atomically, eliminating the race condition
- * that existed with delete-then-write (where reads during the gap found
- * no blob and returned empty data).
+ * Write-before-delete: creates the new blob first, then removes old ones.
+ * This eliminates the race condition where delete-then-write left a window
+ * with no blob (reads returned empty default data).
+ *
+ * @vercel/blob v2 always adds a random suffix, so each put() creates a
+ * new URL. We write first, then delete all blobs except the new one.
  */
 export async function writeJsonBlob(key: string, data: unknown): Promise<void> {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
@@ -63,17 +70,16 @@ export async function writeJsonBlob(key: string, data: unknown): Promise<void> {
   }
 
   try {
-    // Write new blob first (atomic overwrite with stable path)
+    // Write new blob FIRST (always available before deleting old)
     const result = await put(key, JSON.stringify(data, null, 2), {
       access: 'public',
       contentType: 'application/json',
-      addRandomSuffix: false,
       token,
     });
 
     console.log(`Wrote blob: ${key} -> ${result.url}`);
 
-    // Clean up any old blobs with random suffixes from before this fix
+    // Now clean up old blobs (new one already exists)
     const { blobs } = await list({ prefix: key, token });
     for (const blob of blobs) {
       if (blob.url !== result.url) {
