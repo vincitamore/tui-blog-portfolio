@@ -214,14 +214,21 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     term.open(terminalRef.current);
     xtermRef.current = term;
 
-    // Configure the helper textarea to reduce mobile IME interference
-    // Note: Don't change position/size - xterm needs to position it at cursor
+    // Configure the helper textarea
     const textarea = terminalRef.current.querySelector('.xterm-helper-textarea') as HTMLTextAreaElement;
     if (textarea) {
       textarea.setAttribute('autocomplete', 'off');
       textarea.setAttribute('autocorrect', 'off');
       textarea.setAttribute('autocapitalize', 'off');
       textarea.setAttribute('spellcheck', 'false');
+
+      // On mobile, DISABLE the textarea entirely - we use our own input field
+      // This prevents accidental focus and input through xterm's textarea
+      if (window.innerWidth < 768) {
+        textarea.setAttribute('disabled', 'true');
+        textarea.setAttribute('readonly', 'true');
+        textarea.style.pointerEvents = 'none';
+      }
     }
 
     // Delay initial fit() - the updateTerminalHeight() in the other useEffect sets
@@ -234,8 +241,14 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
       });
     });
 
-    // Handle terminal input
+    // Handle terminal input - ONLY on desktop
+    // On mobile, input comes through MobileCommandBar's input field
     term.onData((data) => {
+      // Check if we're on mobile - if so, ignore xterm's input
+      // (all input should come through our controlled input field)
+      if (window.innerWidth < 768) {
+        return; // Ignore xterm input on mobile
+      }
       sendInputRef.current(data);
     });
 
@@ -280,14 +293,15 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
   // Mobile command bar key handler
   const handleMobileKey = useCallback((key: string) => {
     sendInput(key);
-    xtermRef.current?.focus();
+    // DON'T focus xterm - keep focus on our command bar input
+    // Focusing xterm would activate its hidden textarea which we want to avoid on mobile
   }, [sendInput]);
 
   // Mobile escape handler
   const handleMobileEscape = useCallback(() => {
     // Send escape to terminal
     sendInput('\x1b');
-    xtermRef.current?.focus();
+    // DON'T focus xterm - keep focus on our command bar input
   }, [sendInput]);
 
   // Prevent pull-to-refresh on mobile by disabling it on body when terminal is active
