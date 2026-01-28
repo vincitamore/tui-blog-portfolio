@@ -99,6 +99,37 @@
   touch-action: manipulation;
 }
 
+/* Hide the native IME composition box on mobile */
+/* xterm uses a helper textarea for input - hide its native UI */
+.ssh-terminal-container .xterm-helper-textarea {
+  /* Make completely invisible but still functional */
+  opacity: 0 !important;
+  /* Position at 0,0 to prevent weird offset issues */
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  /* Prevent the browser from showing any native UI */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  /* Disable autocomplete/suggestions that might show UI */
+  autocomplete: off;
+  autocorrect: off;
+  autocapitalize: off;
+  spellcheck: false;
+  /* Make it tiny so any residual UI is minimal */
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  outline: none !important;
+  /* Ensure text composition doesn't show */
+  color: transparent !important;
+  background: transparent !important;
+  caret-color: transparent !important;
+}
+
 /* Ensure xterm fills container */
 .ssh-terminal-container .xterm {
   height: 100%;

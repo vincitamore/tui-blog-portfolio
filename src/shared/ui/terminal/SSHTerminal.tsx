@@ -140,6 +140,8 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
       cursorBlink: true,
       fontSize: 14,
       fontFamily: 'JetBrains Mono, Menlo, Monaco, Consolas, monospace',
+      // Disable screen reader mode which can cause input issues on mobile
+      screenReaderMode: false,
       theme: {
         background: getVar('--term-background', '#1a1a2e'),
         foreground: getVar('--term-foreground', '#e0e0e0'),
@@ -179,6 +181,20 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     // Open terminal in container
     term.open(terminalRef.current);
     xtermRef.current = term;
+
+    // Configure the helper textarea to prevent mobile IME issues
+    const textarea = terminalRef.current.querySelector('.xterm-helper-textarea') as HTMLTextAreaElement;
+    if (textarea) {
+      textarea.setAttribute('autocomplete', 'off');
+      textarea.setAttribute('autocorrect', 'off');
+      textarea.setAttribute('autocapitalize', 'off');
+      textarea.setAttribute('spellcheck', 'false');
+      // Use text inputmode for standard keyboard without predictions causing issues
+      textarea.setAttribute('inputmode', 'text');
+      // Disable any data suggestions
+      textarea.setAttribute('data-gramm', 'false');
+      textarea.setAttribute('data-gramm_editor', 'false');
+    }
 
     // Fit to container
     fitAddon.fit();
