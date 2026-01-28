@@ -63,10 +63,19 @@ export function extractToken(req: VercelRequest): string | null {
 
 /**
  * Verify request has valid authentication
+ * Supports both session tokens (from login) and static API token (for programmatic access)
  */
 export async function verifyAuth(req: VercelRequest): Promise<boolean> {
   const token = extractToken(req);
   if (!token) return false;
+
+  // Check for static API token first (for Claude/programmatic access)
+  const apiToken = process.env.ADMIN_API_TOKEN;
+  if (apiToken && token === apiToken) {
+    return true;
+  }
+
+  // Fall back to session token validation
   return validateSession(token);
 }
 
