@@ -13,10 +13,10 @@
   border-top: 1px solid var(--term-border);
   padding: 8px;
   z-index: 1000;
-  /* Safe area for iOS */
+  /* Safe area for iOS - only when keyboard closed */
   padding-bottom: max(8px, env(safe-area-inset-bottom));
-  /* Will be positioned by JS when keyboard opens */
-  transition: transform 0.1s ease-out;
+  /* Smooth repositioning when keyboard opens/closes */
+  transition: bottom 0.15s ease-out;
 }
 
 /* When keyboard is open, transform to sit above it */

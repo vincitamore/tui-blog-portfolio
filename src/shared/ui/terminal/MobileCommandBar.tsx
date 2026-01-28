@@ -196,7 +196,7 @@ export const MobileCommandBar: React.FC<MobileCommandBarProps> = ({
     <div
       ref={barRef}
       className={`mobile-command-bar ${keyboardHeight > 0 ? 'keyboard-attached' : ''}`}
-      style={keyboardHeight > 0 ? { transform: `translateY(-${keyboardHeight}px)` } : undefined}
+      style={keyboardHeight > 0 ? { bottom: `${keyboardHeight}px` } : undefined}
     >
       {/* Text input row - this captures all keyboard input */}
       <div className="mobile-command-bar-input-row">

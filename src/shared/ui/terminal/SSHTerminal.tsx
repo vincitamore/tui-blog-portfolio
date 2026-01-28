@@ -315,6 +315,20 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     };
   }, []);
 
+  // Handle tab visibility changes - reconnect when tab becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && status === 'disconnected') {
+        // Tab became visible and we're disconnected - try to reconnect
+        console.log('[SSHTerminal] Tab visible, attempting reconnect...');
+        connect();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [status, connect]);
+
   // Touch scroll handlers for smooth mobile scrolling
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 1) {
