@@ -117,10 +117,6 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
             if (term.cols && term.rows) {
               resizeRef.current(term.cols, term.rows);
             }
-            // Force terminal to refresh display - fixes invisible text after resize
-            term.refresh(0, term.rows - 1);
-            // Scroll to bottom to ensure cursor is visible
-            term.scrollToBottom();
           }
         }, 100);
       };
@@ -228,8 +224,15 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
       textarea.setAttribute('spellcheck', 'false');
     }
 
-    // Fit to container
-    fitAddon.fit();
+    // Delay initial fit() - the updateTerminalHeight() in the other useEffect sets
+    // explicit height, but the browser may not have reflowed yet. Use rAF to ensure
+    // we fit after the browser has calculated final layout.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        // Double rAF ensures we're after both style calculation and paint
+        fitAddon.fit();
+      });
+    });
 
     // Handle terminal input
     term.onData((data) => {
@@ -349,15 +352,6 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
   const handleContainerClick = useCallback(() => {
     if (!touchScrolling.current && xtermRef.current) {
       xtermRef.current.focus();
-      // After focus (which opens keyboard), refresh display after layout settles
-      // This fixes invisible text when first tapping to open keyboard
-      setTimeout(() => {
-        if (xtermRef.current && fitAddonRef.current) {
-          fitAddonRef.current.fit();
-          xtermRef.current.refresh(0, xtermRef.current.rows - 1);
-          xtermRef.current.scrollToBottom();
-        }
-      }, 150);
     }
   }, []);
 
