@@ -2,9 +2,10 @@
  * Mobile Command Bar
  * Floating bar with modifier keys for mobile terminal interaction
  * Keys: Esc | Ctrl | Shift | Tab | Arrows
+ * Attaches to top of mobile keyboard when open
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import './MobileCommandBar.css';
 
 export interface MobileCommandBarProps {
@@ -31,6 +32,33 @@ export const MobileCommandBar: React.FC<MobileCommandBarProps> = ({
 }) => {
   const [ctrlActive, setCtrlActive] = useState(false);
   const [shiftActive, setShiftActive] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const barRef = useRef<HTMLDivElement>(null);
+
+  // Track keyboard via visual viewport API
+  useEffect(() => {
+    if (!visible) return;
+
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const handleResize = () => {
+      // Calculate keyboard height from viewport difference
+      const keyboardH = window.innerHeight - viewport.height;
+      setKeyboardHeight(keyboardH > 50 ? keyboardH : 0);
+    };
+
+    viewport.addEventListener('resize', handleResize);
+    viewport.addEventListener('scroll', handleResize);
+
+    // Initial check
+    handleResize();
+
+    return () => {
+      viewport.removeEventListener('resize', handleResize);
+      viewport.removeEventListener('scroll', handleResize);
+    };
+  }, [visible]);
 
   // Handle modifier key press
   const handleCtrl = useCallback(() => {
@@ -78,7 +106,11 @@ export const MobileCommandBar: React.FC<MobileCommandBarProps> = ({
   if (!visible) return null;
 
   return (
-    <div className="mobile-command-bar">
+    <div
+      ref={barRef}
+      className={`mobile-command-bar ${keyboardHeight > 0 ? 'keyboard-attached' : ''}`}
+      style={keyboardHeight > 0 ? { transform: `translateY(-${keyboardHeight}px)` } : undefined}
+    >
       <div className="mobile-command-bar-row">
         {/* Escape */}
         <button

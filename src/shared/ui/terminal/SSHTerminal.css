@@ -9,6 +9,9 @@
   height: 100%;
   width: 100%;
   background: var(--term-background, #1a1a2e);
+  /* Prevent pull-to-refresh on mobile */
+  overscroll-behavior: none;
+  touch-action: pan-x pan-y;
 }
 
 /* Status bar */
@@ -85,6 +88,8 @@
   overflow: hidden;
   padding: 8px;
   min-height: 0; /* Important for flex children */
+  /* Prevent pull-to-refresh when scrolling terminal */
+  overscroll-behavior: contain;
 }
 
 /* Ensure xterm fills container */
@@ -94,6 +99,8 @@
 
 .ssh-terminal-container .xterm-viewport {
   overflow-y: auto !important;
+  /* Prevent pull-to-refresh when at top of scroll */
+  overscroll-behavior: contain;
 }
 
 /* Mobile: account for command bar */

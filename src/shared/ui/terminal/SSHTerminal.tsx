@@ -239,6 +239,17 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     xtermRef.current?.focus();
   }, [sendInput]);
 
+  // Prevent pull-to-refresh on mobile by disabling it on body when terminal is active
+  useEffect(() => {
+    // Add overscroll-behavior to body when terminal mounts
+    const originalOverscroll = document.body.style.overscrollBehavior;
+    document.body.style.overscrollBehavior = 'none';
+
+    return () => {
+      document.body.style.overscrollBehavior = originalOverscroll;
+    };
+  }, []);
+
   // Get status text
   const getStatusText = () => {
     switch (status) {

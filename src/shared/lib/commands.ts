@@ -74,7 +74,7 @@ const commands: Record<string, CommandHandler> = {
           '  ban <ip>          Ban an IP address',
           '  unban <ip>        Unban an IP address',
           '  delete-comment    Delete a comment (interactive)',
-          '  claude-org        Connect to Claude Code via SSH',
+          '  claude-org        Connect to Claude Code session',
           '  passwd            Change admin password',
           '  logout            Exit admin session',
         ] : []),
@@ -321,12 +321,12 @@ const commands: Record<string, CommandHandler> = {
   },
 
   'claude-org': {
-    description: 'Connect to Claude Code session via SSH',
+    description: 'Connect to Claude Code session',
     execute: (_args, context) => {
       if (!context?.isAdmin) {
         return { type: 'error', content: 'Permission denied. Admin only.' };
       }
-      // Signal to initiate SSH connection - App.tsx will handle
+      // Signal to initiate connection - App.tsx will handle
       return { type: 'output', target: 'ssh_connect', content: '' };
     },
   },

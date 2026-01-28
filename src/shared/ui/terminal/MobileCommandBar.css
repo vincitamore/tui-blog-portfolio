@@ -1,6 +1,7 @@
 /**
  * Mobile Command Bar Styles
  * Fixed bar at bottom with modifier keys and arrows
+ * Uses terminal theme variables for consistency
  */
 
 .mobile-command-bar {
@@ -8,12 +9,19 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: var(--bg-secondary, #1a1a2e);
-  border-top: 1px solid var(--border-color, #333);
+  background: var(--term-background);
+  border-top: 1px solid var(--term-border);
   padding: 8px;
   z-index: 1000;
   /* Safe area for iOS */
   padding-bottom: max(8px, env(safe-area-inset-bottom));
+  /* Will be positioned by JS when keyboard opens */
+  transition: transform 0.1s ease-out;
+}
+
+/* When keyboard is open, transform to sit above it */
+.mobile-command-bar.keyboard-attached {
+  /* Transform set dynamically via style attribute */
 }
 
 .mobile-command-bar-row {
@@ -23,6 +31,13 @@
   max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  /* Hide scrollbar */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.mobile-command-bar-row::-webkit-scrollbar {
+  display: none;
 }
 
 .mobile-cmd-btn {
@@ -31,42 +46,47 @@
   font-family: inherit;
   font-size: 14px;
   font-weight: 500;
-  color: var(--fg-primary, #e0e0e0);
-  background: var(--bg-tertiary, #252536);
-  border: 1px solid var(--border-color, #444);
+  color: var(--term-foreground);
+  background: var(--term-selection);
+  border: 1px solid var(--term-border);
   border-radius: 6px;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 0.1s, border-color 0.1s;
+  /* Minimum touch target */
+  min-height: 44px;
 }
 
 .mobile-cmd-btn:active {
-  background: var(--accent-color, #6366f1);
-  border-color: var(--accent-color, #6366f1);
+  background: var(--term-primary);
+  border-color: var(--term-primary);
+  color: var(--term-background);
 }
 
 /* Modifier buttons when active */
 .mobile-cmd-btn.mobile-cmd-mod.active {
-  background: var(--accent-color, #6366f1);
-  border-color: var(--accent-color, #6366f1);
-  color: var(--fg-on-accent, #fff);
+  background: var(--term-primary);
+  border-color: var(--term-primary);
+  color: var(--term-background);
 }
 
-/* Escape button - slightly different color */
+/* Escape button - warning color */
 .mobile-cmd-btn.mobile-cmd-esc {
-  background: var(--bg-warning, #4a3f28);
-  border-color: var(--border-warning, #6b5a3d);
+  background: color-mix(in srgb, var(--term-warning, var(--term-accent)) 20%, var(--term-background));
+  border-color: var(--term-warning, var(--term-accent));
+  color: var(--term-warning, var(--term-accent));
 }
 
 .mobile-cmd-btn.mobile-cmd-esc:active {
-  background: var(--warning-color, #f59e0b);
+  background: var(--term-warning, var(--term-accent));
+  color: var(--term-background);
 }
 
 /* Arrow buttons - square */
 .mobile-cmd-btn.mobile-cmd-arrow {
   padding: 10px 12px;
-  min-width: 40px;
+  min-width: 44px;
   text-align: center;
 }
 
@@ -88,6 +108,7 @@
   .mobile-cmd-btn {
     padding: 8px 10px;
     font-size: 13px;
+    min-height: 40px;
   }
 
   .mobile-command-bar {

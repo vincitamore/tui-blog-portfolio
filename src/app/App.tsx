@@ -457,15 +457,15 @@ const App: React.FC = () => {
             }
             // SSH connect command
             if (result.target === 'ssh_connect') {
-              addLine({ type: 'info', content: 'Requesting SSH session...' });
+              addLine({ type: 'info', content: 'Connecting to Claude session...' });
               requestSSHSession()
                 .then((session) => {
                   setSSHSession(session);
                   setSSHMode(true);
-                  addLine({ type: 'success', content: 'SSH session established. Connecting...' });
+                  addLine({ type: 'success', content: 'Connected to Claude Code' });
                 })
                 .catch((err) => {
-                  addLine({ type: 'error', content: err.message || 'Failed to create SSH session' });
+                  addLine({ type: 'error', content: err.message || 'Failed to connect' });
                 });
               break;
             }
@@ -525,12 +525,12 @@ const App: React.FC = () => {
   const handleSSHDisconnect = useCallback(() => {
     setSSHMode(false);
     setSSHSession(null);
-    addLine({ type: 'info', content: 'SSH session ended' });
+    addLine({ type: 'info', content: 'Claude session ended' });
   }, [addLine]);
 
   // Handle SSH error
   const handleSSHError = useCallback((message: string) => {
-    addLine({ type: 'error', content: `SSH error: ${message}` });
+    addLine({ type: 'error', content: `Connection error: ${message}` });
   }, [addLine]);
 
   // Welcome message component - ASCII art stays small, text below is larger on mobile
