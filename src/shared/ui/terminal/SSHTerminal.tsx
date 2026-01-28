@@ -182,18 +182,14 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     term.open(terminalRef.current);
     xtermRef.current = term;
 
-    // Configure the helper textarea to prevent mobile IME issues
+    // Configure the helper textarea to reduce mobile IME interference
+    // Note: Don't change position/size - xterm needs to position it at cursor
     const textarea = terminalRef.current.querySelector('.xterm-helper-textarea') as HTMLTextAreaElement;
     if (textarea) {
       textarea.setAttribute('autocomplete', 'off');
       textarea.setAttribute('autocorrect', 'off');
       textarea.setAttribute('autocapitalize', 'off');
       textarea.setAttribute('spellcheck', 'false');
-      // Use text inputmode for standard keyboard without predictions causing issues
-      textarea.setAttribute('inputmode', 'text');
-      // Disable any data suggestions
-      textarea.setAttribute('data-gramm', 'false');
-      textarea.setAttribute('data-gramm_editor', 'false');
     }
 
     // Fit to container
