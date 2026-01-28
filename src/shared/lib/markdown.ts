@@ -41,9 +41,32 @@ tuiRenderer.listitem = function(item: Tokens.ListItem): string {
   return `<li class="tui-list-item">${text}</li>`;
 };
 
-// Blockquotes with pipe characters
+// Callout type mappings
+const CALLOUT_TYPES: Record<string, { icon: string; colorClass: string }> = {
+  note: { icon: '[i]', colorClass: 'info' },
+  info: { icon: '[i]', colorClass: 'info' },
+  tip: { icon: '[✓]', colorClass: 'success' },
+  warning: { icon: '[!]', colorClass: 'warning' },
+  danger: { icon: '[✗]', colorClass: 'error' },
+};
+
+// Blockquotes with pipe characters + callout support
+// Syntax: > {note} **Title**\n> Body text
 tuiRenderer.blockquote = function({ tokens }: Tokens.Blockquote): string {
   const text = this.parser.parse(tokens);
+
+  // Check for callout syntax: {type} at the start of content
+  const calloutMatch = text.match(/^\s*<p[^>]*>\s*\{(\w+)\}\s*/);
+  if (calloutMatch) {
+    const type = calloutMatch[1].toLowerCase();
+    const callout = CALLOUT_TYPES[type];
+    if (callout) {
+      // Strip the {type} tag from content
+      const content = text.replace(/\{(\w+)\}\s*/, '');
+      return `<blockquote class="tui-callout tui-callout-${callout.colorClass}"><div class="tui-callout-indicator"><span class="tui-callout-icon">${callout.icon}</span><span class="tui-callout-type">${type}</span></div><div class="tui-callout-content">${content}</div></blockquote>`;
+    }
+  }
+
   return `<blockquote class="tui-blockquote"><span class="tui-blockquote-border"></span><div class="tui-blockquote-content">${text}</div></blockquote>`;
 };
 
