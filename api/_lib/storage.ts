@@ -26,7 +26,13 @@ export async function readJsonBlob<T>(key: string, defaultValue: T): Promise<T> 
       return defaultValue;
     }
 
-    const response = await fetch(blobs[0].url);
+    // Add cache-busting query param to bypass CDN cache
+    const url = new URL(blobs[0].url);
+    url.searchParams.set('_t', Date.now().toString());
+
+    const response = await fetch(url.toString(), {
+      cache: 'no-store',
+    });
     if (!response.ok) {
       console.error(`Failed to fetch blob: ${response.status} ${response.statusText}`);
       return defaultValue;
@@ -57,10 +63,11 @@ export async function writeJsonBlob(key: string, data: unknown): Promise<void> {
       await del(blob.url, { token });
     }
 
-    // Write new blob
+    // Write new blob with minimal cache time (60s is minimum allowed)
     const result = await put(key, JSON.stringify(data, null, 2), {
       access: 'public',
       contentType: 'application/json',
+      cacheControlMaxAge: 60,
       token,
     });
 
