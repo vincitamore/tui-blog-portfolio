@@ -10,40 +10,28 @@ import { put, list, del } from '@vercel/blob';
  */
 export async function readJsonBlob<T>(key: string, defaultValue: T): Promise<T> {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
-  
+
   if (!token) {
     console.error('BLOB_READ_WRITE_TOKEN is not set');
     throw new Error('Storage not configured: BLOB_READ_WRITE_TOKEN missing');
   }
-  
+
   try {
     const { blobs } = await list({ prefix: key, token });
 
-    console.log(`Blob list for ${key}: ${blobs.length} blob(s)`);
+    console.log(`Blob list for ${key}:`, blobs.map(b => b.pathname));
 
     if (blobs.length === 0) {
       console.log(`No blobs found for key: ${key}, returning default`);
       return defaultValue;
     }
 
-    // Use the most recently uploaded blob (last in list by upload time)
-    const latest = blobs.sort((a, b) =>
-      new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
-    )[0];
-
-    // Add cache-busting to avoid CDN stale reads
-    const response = await fetch(latest.url, {
-      cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-      },
-    });
+    const response = await fetch(blobs[0].url);
     if (!response.ok) {
       console.error(`Failed to fetch blob: ${response.status} ${response.statusText}`);
       return defaultValue;
     }
-    
+
     return await response.json();
   } catch (error) {
     console.error(`Error reading blob ${key}:`, error);
@@ -54,12 +42,8 @@ export async function readJsonBlob<T>(key: string, defaultValue: T): Promise<T> 
 /**
  * Write JSON data to Vercel Blob storage
  *
- * Write-before-delete: creates the new blob first, then removes old ones.
- * This eliminates the race condition where delete-then-write left a window
- * with no blob (reads returned empty default data).
- *
- * @vercel/blob v2 always adds a random suffix, so each put() creates a
- * new URL. We write first, then delete all blobs except the new one.
+ * Write-before-delete: writes new blob first, then removes old ones.
+ * This eliminates the window where no blob exists during the transition.
  */
 export async function writeJsonBlob(key: string, data: unknown): Promise<void> {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
@@ -70,7 +54,10 @@ export async function writeJsonBlob(key: string, data: unknown): Promise<void> {
   }
 
   try {
-    // Write new blob FIRST (always available before deleting old)
+    // Capture old blobs before writing
+    const { blobs: oldBlobs } = await list({ prefix: key, token });
+
+    // Write new blob FIRST
     const result = await put(key, JSON.stringify(data, null, 2), {
       access: 'public',
       contentType: 'application/json',
@@ -79,12 +66,10 @@ export async function writeJsonBlob(key: string, data: unknown): Promise<void> {
 
     console.log(`Wrote blob: ${key} -> ${result.url}`);
 
-    // Now clean up old blobs (new one already exists)
-    const { blobs } = await list({ prefix: key, token });
-    for (const blob of blobs) {
+    // Then delete old blobs
+    for (const blob of oldBlobs) {
       if (blob.url !== result.url) {
         await del(blob.url, { token });
-        console.log(`Cleaned up old blob: ${blob.pathname}`);
       }
     }
   } catch (error) {
