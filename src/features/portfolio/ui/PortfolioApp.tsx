@@ -32,6 +32,7 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
 
   // View a project (updates URL for shareable links)
   const viewProject = useCallback((project: Project | null) => {
+    console.log('[viewProject] called with:', project?.slug || 'null', new Error().stack);
     setViewingProject(project);
     if (project?.slug) {
       navigate(`/portfolio/${project.slug}`, { replace: true });
@@ -55,11 +56,14 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
   // Handle direct URL navigation (when user lands on /portfolio/slug directly)
   // Only runs once on mount if there's a slug in the URL
   useEffect(() => {
+    console.log('[useEffect slug] slug:', slug, 'viewingProject:', viewingProject?.slug);
     if (!slug) return;
 
     // Fetch the project for direct navigation
     const loadProject = async () => {
+      console.log('[loadProject] fetching:', slug);
       const project = await fetchProjectBySlug(slug);
+      console.log('[loadProject] got:', project?.slug);
       if (project) {
         setViewingProject(project);
       }
@@ -68,6 +72,7 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
     // Only fetch if we don't already have it displayed
     // (avoids refetching when navigating programmatically)
     if (!viewingProject || viewingProject.slug !== slug) {
+      console.log('[useEffect slug] will fetch because viewingProject mismatch');
       loadProject();
     }
   }, [slug]); // Only depend on slug, not projects or viewingProject
@@ -131,6 +136,7 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
 
       if (viewingProject) {
         if (e.key === 'Escape' || e.key === 'q') {
+          console.log('[keydown] Escape/q pressed while viewing, calling viewProject(null)');
           e.preventDefault();
           viewProject(null);
         }

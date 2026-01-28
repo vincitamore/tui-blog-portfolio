@@ -108,3 +108,5 @@ logs/
 
 # Content data (managed per-environment)
 content/*.json
+.vercel
+.env*.local
