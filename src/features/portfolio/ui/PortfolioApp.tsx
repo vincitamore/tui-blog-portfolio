@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { fetchProjects, fetchProjectBySlug, createProject, updateProject, deleteProject, reorderProjects } from '../../../shared/lib/api';
@@ -33,6 +33,9 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Refs for autoscroll on keyboard navigation
+  const listItemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // View a project (updates URL for shareable links)
   const viewProject = useCallback((project: Project | null) => {
@@ -201,6 +204,16 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
+
+  // Autoscroll to keep selected item visible during keyboard navigation
+  useEffect(() => {
+    if (!viewingProject && listItemRefs.current[selectedIndex]) {
+      listItemRefs.current[selectedIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [selectedIndex, viewingProject]);
 
   const handleSaveProject = useCallback(async (data: EditorData) => {
     setSaveStatus('saving');
@@ -497,6 +510,7 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
             {projects.map((project, index) => (
               <motion.div
                 key={project.id}
+                ref={(el) => { listItemRefs.current[index] = el; }}
                 layout
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
