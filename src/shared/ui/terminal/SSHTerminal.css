@@ -141,18 +141,11 @@
   overflow: hidden !important;
 }
 
-/* Mobile: account for command bar */
+/* Mobile: command bar is position:fixed, so JS sets explicit height */
 @media (max-width: 767px) {
   .ssh-terminal-wrapper {
-    /* Default: leave space for command bar + safe area when keyboard closed */
-    /* When keyboard opens, JS sets explicit height instead */
-    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
-  }
-
-  /* When keyboard is open, JS controls height - remove padding */
-  .ssh-terminal-wrapper.keyboard-open {
-    padding-bottom: 0;
-    /* Ensure flex children respect the explicit height */
+    /* NO padding - JS calculates and sets explicit height to account for
+       the fixed-position command bar. Padding doesn't work with flex. */
     overflow: hidden;
   }
 

@@ -74,26 +74,37 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     window.addEventListener('resize', checkMobile);
 
     // Visual viewport API for mobile keyboard handling
-    // Key insight: padding doesn't shrink flex children - we need explicit height
+    // Key insight: padding doesn't shrink flex children - we need explicit height ALWAYS on mobile
+    // The MobileCommandBar is position:fixed and overlays the terminal, so we must
+    // always calculate available height to prevent the terminal from extending under it
     const viewport = window.visualViewport;
     if (viewport) {
-      const handleViewportResize = () => {
+      const updateTerminalHeight = () => {
         const wrapper = document.querySelector('.ssh-terminal-wrapper') as HTMLElement;
         if (!wrapper) return;
+
+        // Only apply on mobile (command bar is hidden on desktop)
+        if (window.innerWidth >= 768) {
+          wrapper.style.height = '';
+          wrapper.classList.remove('keyboard-open');
+          return;
+        }
 
         const keyboardHeight = window.innerHeight - viewport.height;
         const commandBarHeight = 60; // Height of MobileCommandBar
         const safeArea = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab') || '0', 10);
 
+        // ALWAYS set explicit height on mobile - the command bar is position:fixed
+        // and overlays the terminal, so we must account for it whether keyboard is open or not
         if (keyboardHeight > 100) {
-          // Keyboard is open - set explicit height to visual viewport minus command bar
-          // This forces the terminal to fit within visible area
+          // Keyboard is open - use visual viewport height
           const availableHeight = viewport.height - commandBarHeight - safeArea;
           wrapper.style.height = `${availableHeight}px`;
           wrapper.classList.add('keyboard-open');
         } else {
-          // Keyboard closed - remove explicit height, let flex take over
-          wrapper.style.height = '';
+          // Keyboard closed - use full inner height minus command bar and safe area
+          const availableHeight = window.innerHeight - commandBarHeight - safeArea;
+          wrapper.style.height = `${availableHeight}px`;
           wrapper.classList.remove('keyboard-open');
         }
 
@@ -110,13 +121,16 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
         }, 100);
       };
 
-      viewport.addEventListener('resize', handleViewportResize);
-      viewport.addEventListener('scroll', handleViewportResize);
+      // Run immediately to set initial height
+      updateTerminalHeight();
+
+      viewport.addEventListener('resize', updateTerminalHeight);
+      viewport.addEventListener('scroll', updateTerminalHeight);
 
       return () => {
         window.removeEventListener('resize', checkMobile);
-        viewport.removeEventListener('resize', handleViewportResize);
-        viewport.removeEventListener('scroll', handleViewportResize);
+        viewport.removeEventListener('resize', updateTerminalHeight);
+        viewport.removeEventListener('scroll', updateTerminalHeight);
       };
     }
 
