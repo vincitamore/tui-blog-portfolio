@@ -41,9 +41,6 @@ export async function readJsonBlob<T>(key: string, defaultValue: T): Promise<T> 
 
 /**
  * Write JSON data to Vercel Blob storage
- *
- * Write-before-delete: writes new blob first, then removes old ones.
- * This eliminates the window where no blob exists during the transition.
  */
 export async function writeJsonBlob(key: string, data: unknown): Promise<void> {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
@@ -54,10 +51,13 @@ export async function writeJsonBlob(key: string, data: unknown): Promise<void> {
   }
 
   try {
-    // Capture old blobs before writing
-    const { blobs: oldBlobs } = await list({ prefix: key, token });
+    // Delete existing blob if it exists
+    const { blobs } = await list({ prefix: key, token });
+    for (const blob of blobs) {
+      await del(blob.url, { token });
+    }
 
-    // Write new blob FIRST
+    // Write new blob
     const result = await put(key, JSON.stringify(data, null, 2), {
       access: 'public',
       contentType: 'application/json',
@@ -65,13 +65,6 @@ export async function writeJsonBlob(key: string, data: unknown): Promise<void> {
     });
 
     console.log(`Wrote blob: ${key} -> ${result.url}`);
-
-    // Then delete old blobs
-    for (const blob of oldBlobs) {
-      if (blob.url !== result.url) {
-        await del(blob.url, { token });
-      }
-    }
   } catch (error) {
     console.error(`Error writing blob ${key}:`, error);
     throw error;
