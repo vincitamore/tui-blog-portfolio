@@ -52,44 +52,25 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
     loadData();
   }, []);
 
-  // Handle slug changes (direct navigation or programmatic)
+  // Handle direct URL navigation (when user lands on /portfolio/slug directly)
+  // Only runs once on mount if there's a slug in the URL
   useEffect(() => {
-    if (!slug) {
-      // No slug - clear viewing state if we have one (user pressed back)
-      // But don't clear if we're navigating programmatically via viewProject(null)
-      return;
-    }
+    if (!slug) return;
 
-    // If we already have this project loaded, just update state
-    const existingProject = projects.find(p => p.slug === slug);
-    if (existingProject) {
-      setViewingProject(existingProject);
-      const idx = projects.findIndex(p => p.slug === slug);
-      if (idx >= 0) setSelectedIndex(idx);
-      return;
-    }
+    // Fetch the project for direct navigation
+    const loadProject = async () => {
+      const project = await fetchProjectBySlug(slug);
+      if (project) {
+        setViewingProject(project);
+      }
+    };
 
-    // Direct navigation to slug - fetch the specific project
-    if (projects.length > 0) {
-      // Projects already loaded but this slug not found - fetch it
-      const fetchProject = async () => {
-        const project = await fetchProjectBySlug(slug);
-        if (project) {
-          setViewingProject(project);
-        }
-      };
-      fetchProject();
-    } else {
-      // Projects not loaded yet - will be handled after projects load
-      const fetchProject = async () => {
-        const project = await fetchProjectBySlug(slug);
-        if (project) {
-          setViewingProject(project);
-        }
-      };
-      fetchProject();
+    // Only fetch if we don't already have it displayed
+    // (avoids refetching when navigating programmatically)
+    if (!viewingProject || viewingProject.slug !== slug) {
+      loadProject();
     }
-  }, [slug, projects]);
+  }, [slug]); // Only depend on slug, not projects or viewingProject
 
   // Move project up in the list
   const handleMoveUp = useCallback(async () => {
