@@ -8,6 +8,7 @@ import { renderMarkdown, stripMarkdown } from '../../../shared/lib/markdown';
 import { TuiEditor } from '../../../shared/ui/editor';
 import type { EditorData } from '../../../shared/ui/editor';
 import { TouchNav, type NavAction } from '../../../shared/ui/tui';
+import CommentSection from './comments/CommentSection';
 
 interface BlogAppProps {
   onBack: () => void;
@@ -369,6 +370,9 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
               dangerouslySetInnerHTML={{ __html: renderMarkdown(viewingPost.content || viewingPost.excerpt) }}
             />
           </article>
+
+          {/* Comments Section */}
+          <CommentSection postSlug={viewingPost.slug} />
         </div>
 
         {/* Touch Navigation Bar */}

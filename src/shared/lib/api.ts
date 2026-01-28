@@ -180,4 +180,81 @@ export async function reorderProjects(projectIds: string[]): Promise<Project[]> 
   return handleResponse(res);
 }
 
+// ============ COMMENTS API ============
 
+export interface Comment {
+  id: string;
+  postSlug: string;
+  parentId: string | null;
+  author: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string | null;
+  edited: boolean;
+}
+
+// localStorage keys for comment author identity
+const AUTHOR_TOKEN_KEY = 'comment_author_token';
+const AUTHOR_NAME_KEY = 'comment_author_name';
+
+// Generate or retrieve author token from localStorage
+export function getAuthorToken(): string {
+  let token = localStorage.getItem(AUTHOR_TOKEN_KEY);
+  if (!token) {
+    token = crypto.randomUUID();
+    localStorage.setItem(AUTHOR_TOKEN_KEY, token);
+  }
+  return token;
+}
+
+// Get/set saved author name
+export function getSavedAuthorName(): string {
+  return localStorage.getItem(AUTHOR_NAME_KEY) || '';
+}
+
+export function saveAuthorName(name: string): void {
+  if (name.trim()) {
+    localStorage.setItem(AUTHOR_NAME_KEY, name.trim());
+  }
+}
+
+// Fetch comments for a blog post
+export async function fetchComments(postSlug: string): Promise<Comment[]> {
+  try {
+    const res = await fetch(`${API_URL}/api/comments/${postSlug}`);
+    if (!res.ok) throw new Error('Failed to fetch comments');
+    return res.json();
+  } catch (err) {
+    console.error('API Error:', err);
+    return [];
+  }
+}
+
+// Create a new comment
+export async function createComment(
+  postSlug: string,
+  comment: { content: string; author?: string; parentId?: string }
+): Promise<Comment> {
+  const authorToken = getAuthorToken();
+
+  // Save author name if provided
+  if (comment.author) {
+    saveAuthorName(comment.author);
+  }
+
+  const res = await fetch(`${API_URL}/api/comments/${postSlug}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...comment,
+      authorToken,
+    }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to create comment');
+  }
+
+  return res.json();
+}

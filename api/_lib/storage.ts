@@ -87,4 +87,9 @@ export const CONTENT_KEYS = {
   PORTFOLIO: 'content/portfolio.json',
   ADMIN: 'content/admin.json',
   VISITORS: 'content/visitors.json',
+  COMMENTS_META: 'content/comments-meta.json',
+  BANNED_IPS: 'content/banned-ips.json',
 } as const;
+
+// Dynamic content key helper for per-post comments
+export const getCommentsKey = (postSlug: string) => `content/comments-${postSlug}.json`;
