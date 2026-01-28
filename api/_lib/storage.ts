@@ -26,8 +26,13 @@ export async function readJsonBlob<T>(key: string, defaultValue: T): Promise<T> 
       return defaultValue;
     }
 
+    // Sort by uploadedAt descending to get newest blob (handles legacy random-suffix blobs)
+    const sortedBlobs = [...blobs].sort((a, b) =>
+      new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+    );
+
     // Add cache-busting query param to bypass CDN cache
-    const url = new URL(blobs[0].url);
+    const url = new URL(sortedBlobs[0].url);
     url.searchParams.set('_t', Date.now().toString());
 
     const response = await fetch(url.toString(), {
