@@ -240,6 +240,15 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
     return actions;
   };
 
+  // Navigate to a post from admin panel
+  const handleNavigateToPost = useCallback((postSlug: string) => {
+    const post = posts.find(p => p.slug === postSlug);
+    if (post) {
+      viewPost(post);
+      setShowAdminPanel(false);
+    }
+  }, [posts, viewPost]);
+
   // Navigation actions for post view
   const getPostActions = (): NavAction[] => {
     const actions: NavAction[] = [];
@@ -402,15 +411,6 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
       </div>
     );
   }
-
-  // Navigate to a post from admin panel
-  const handleNavigateToPost = useCallback((postSlug: string) => {
-    const post = posts.find(p => p.slug === postSlug);
-    if (post) {
-      viewPost(post);
-      setShowAdminPanel(false);
-    }
-  }, [posts, viewPost]);
 
   // Show post list
   return (
