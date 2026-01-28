@@ -1,7 +1,8 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import { fetchBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost } from '../../../shared/lib/api';
+import { fetchBlogPosts, fetchBlogPostBySlug, createBlogPost, updateBlogPost, deleteBlogPost } from '../../../shared/lib/api';
 import type { BlogPost } from '../../../shared/lib/api';
 import { renderMarkdown, stripMarkdown } from '../../../shared/lib/markdown';
 import { TuiEditor } from '../../../shared/ui/editor';
@@ -20,6 +21,10 @@ interface BlogAppProps {
  * Touch-friendly navigation for mobile users
  */
 const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
+  // With route path="/blog/*", the slug is in params['*'], not params.slug
+  const params = useParams();
+  const slug = params['*'] || undefined;
+  const navigate = useNavigate();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [viewingPost, setViewingPost] = useState<BlogPost | null>(null);
@@ -29,12 +34,47 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Refs for autoscroll on keyboard navigation
+  const listItemRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // View a post (updates URL for shareable links)
+  const viewPost = useCallback((post: BlogPost | null) => {
+    setViewingPost(post);
+    if (post?.slug) {
+      navigate(`/blog/${post.slug}`);
+    } else if (!post) {
+      navigate('/blog');
+    }
+  }, [navigate]);
+
+  // Load posts on mount
   useEffect(() => {
     setIsLoading(true);
     fetchBlogPosts(isAdmin) // Pass isAdmin to include admin-only posts
       .then(setPosts)
       .finally(() => setIsLoading(false));
   }, [isAdmin]);
+
+  // Sync viewingPost state with URL slug
+  useEffect(() => {
+    // URL is /blog with no slug - clear viewing state
+    if (!slug) {
+      setViewingPost(null);
+      return;
+    }
+
+    const loadPost = async () => {
+      const post = await fetchBlogPostBySlug(slug, isAdmin);
+      if (post) {
+        setViewingPost(post);
+      }
+    };
+
+    // Only fetch if we don't already have it displayed
+    if (!viewingPost || viewingPost.slug !== slug) {
+      loadPost();
+    }
+  }, [slug, isAdmin]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -54,7 +94,7 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
       if (viewingPost) {
         if (e.key === 'Escape' || e.key === 'q') {
           e.preventDefault();
-          setViewingPost(null);
+          viewPost(null);
         }
         if (isAdmin && e.key === 'e') {
           e.preventDefault();
@@ -81,7 +121,7 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
         case 'Enter':
           e.preventDefault();
           if (posts[selectedIndex]) {
-            setViewingPost(posts[selectedIndex]);
+            viewPost(posts[selectedIndex]);
           }
           break;
         case 'n':
@@ -97,13 +137,23 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
           break;
       }
     },
-    [posts, selectedIndex, viewingPost, onBack, isAdmin, isCreating, editingPost, showDeleteConfirm],
+    [posts, selectedIndex, viewingPost, onBack, isAdmin, isCreating, editingPost, showDeleteConfirm, viewPost],
   );
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
+
+  // Autoscroll to keep selected item visible during keyboard navigation
+  useEffect(() => {
+    if (!viewingPost && listItemRefs.current[selectedIndex]) {
+      listItemRefs.current[selectedIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [selectedIndex, viewingPost]);
 
   const handleSavePost = useCallback(async (data: EditorData) => {
     setSaveStatus('saving');
@@ -127,7 +177,7 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
 
   const handleUpdatePost = useCallback(async (data: EditorData) => {
     if (!editingPost) return;
-    
+
     setSaveStatus('saving');
     try {
       const updated = await updateBlogPost(editingPost.slug, {
@@ -138,7 +188,7 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
         adminOnly: data.adminOnly === 'true',
       });
       setPosts(prev => prev.map(p => p.slug === editingPost.slug ? updated : p));
-      setViewingPost(updated);
+      viewPost(updated);
       setEditingPost(null);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
@@ -146,21 +196,21 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
       console.error('Failed to update post:', err);
       setSaveStatus('error');
     }
-  }, [editingPost]);
+  }, [editingPost, viewPost]);
 
   const handleConfirmDelete = useCallback(async () => {
     if (!viewingPost) return;
-    
+
     try {
       await deleteBlogPost(viewingPost.slug);
       setPosts(prev => prev.filter(p => p.slug !== viewingPost.slug));
-      setViewingPost(null);
+      viewPost(null);
       setShowDeleteConfirm(false);
       setSelectedIndex(0);
     } catch (err) {
       console.error('Failed to delete post:', err);
     }
-  }, [viewingPost]);
+  }, [viewingPost, viewPost]);
 
   // Navigation actions for list view
   const getListActions = (): NavAction[] => {
@@ -179,7 +229,7 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
       actions.push({ key: 'e', label: 'Edit', onClick: () => viewingPost && setEditingPost(viewingPost) });
       actions.push({ key: 'd', label: 'Delete', onClick: () => setShowDeleteConfirm(true), variant: 'danger' });
     }
-    actions.push({ key: 'q', label: 'Back', onClick: () => setViewingPost(null) });
+    actions.push({ key: 'q', label: 'Back', onClick: () => viewPost(null) });
     return actions;
   };
 
@@ -365,12 +415,13 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
             {posts.map((post, index) => (
               <motion.div
                 key={post.slug}
+                ref={(el) => { listItemRefs.current[index] = el; }}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
                 onClick={() => {
                   setSelectedIndex(index);
-                  setViewingPost(post);
+                  viewPost(post);
                 }}
                 className="flex items-start gap-3 px-2 py-3 cursor-pointer transition-colors touch-manipulation"
                 style={{

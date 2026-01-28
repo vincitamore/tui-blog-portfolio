@@ -85,6 +85,26 @@ export async function deleteBlogPost(slug: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete post');
 }
 
+export async function fetchBlogPostBySlug(slug: string, includeAdminOnly = false): Promise<BlogPost | null> {
+  try {
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+
+    // If admin, include auth token to get admin-only posts
+    if (includeAdminOnly) {
+      const authHeaders = getAuthHeaders();
+      Object.assign(headers, authHeaders);
+    }
+
+    const res = await fetch(`${API_URL}/api/blog/${slug}`, { headers });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error('Failed to fetch post');
+    return res.json();
+  } catch (err) {
+    console.error('API Error:', err);
+    return null;
+  }
+}
+
 // ============ PORTFOLIO API ============
 
 export interface Project {
