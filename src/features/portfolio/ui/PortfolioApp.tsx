@@ -24,6 +24,9 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [viewingProject, setViewingProject] = useState<Project | null>(null);
+
+  // Debug: Log every render with current state
+  console.log('[RENDER] slug:', slug, 'viewingProject:', viewingProject?.slug, 'location:', window.location.pathname);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,11 +35,16 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
 
   // View a project (updates URL for shareable links)
   const viewProject = useCallback((project: Project | null) => {
-    console.log('[viewProject] called with:', project?.slug || 'null', new Error().stack);
+    console.log('[viewProject] called with:', project?.slug || 'null');
+    console.log('[viewProject] current location before navigate:', window.location.pathname);
     setViewingProject(project);
     if (project?.slug) {
-      navigate(`/portfolio/${project.slug}`, { replace: true });
+      const targetUrl = `/portfolio/${project.slug}`;
+      console.log('[viewProject] navigating to:', targetUrl);
+      navigate(targetUrl, { replace: true });
+      console.log('[viewProject] location after navigate:', window.location.pathname);
     } else if (!project) {
+      console.log('[viewProject] navigating to /portfolio (clearing view)');
       navigate('/portfolio', { replace: true });
     }
   }, [navigate]);
@@ -190,6 +198,7 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
           break;
         case 'Escape':
         case 'q':
+          console.log('[keydown list] Escape/q pressed while on LIST (not viewing), calling onBack');
           e.preventDefault();
           onBack();
           break;
