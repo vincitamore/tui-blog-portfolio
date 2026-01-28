@@ -112,11 +112,15 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
         setTimeout(() => {
           if (fitAddonRef.current && xtermRef.current) {
             fitAddonRef.current.fit();
-            // Send new size to server
             const term = xtermRef.current;
+            // Send new size to server
             if (term.cols && term.rows) {
               resizeRef.current(term.cols, term.rows);
             }
+            // Force terminal to refresh display - fixes invisible text after resize
+            term.refresh(0, term.rows - 1);
+            // Scroll to bottom to ensure cursor is visible
+            term.scrollToBottom();
           }
         }, 100);
       };
@@ -343,8 +347,17 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
 
   // Modified click handler to ignore clicks during/after scroll
   const handleContainerClick = useCallback(() => {
-    if (!touchScrolling.current) {
-      xtermRef.current?.focus();
+    if (!touchScrolling.current && xtermRef.current) {
+      xtermRef.current.focus();
+      // After focus (which opens keyboard), refresh display after layout settles
+      // This fixes invisible text when first tapping to open keyboard
+      setTimeout(() => {
+        if (xtermRef.current && fitAddonRef.current) {
+          fitAddonRef.current.fit();
+          xtermRef.current.refresh(0, xtermRef.current.rows - 1);
+          xtermRef.current.scrollToBottom();
+        }
+      }, 150);
     }
   }, []);
 
