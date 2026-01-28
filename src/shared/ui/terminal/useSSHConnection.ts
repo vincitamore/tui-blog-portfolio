@@ -15,7 +15,7 @@ interface ClientMessage {
 }
 
 interface ServerMessage {
-  type: 'auth_ok' | 'auth_fail' | 'output' | 'error' | 'disconnect' | 'pong';
+  type: 'auth_ok' | 'auth_fail' | 'output' | 'error' | 'disconnect' | 'pong' | 'reconnected';
   data?: string;
   message?: string;
 }
@@ -114,7 +114,12 @@ export function useSSHConnection(options: UseSSHConnectionOptions): UseSSHConnec
 
           switch (msg.type) {
             case 'auth_ok':
-              console.log('[SSH] Authenticated');
+              console.log('[SSH] Authenticated - new session');
+              updateStatus('connected');
+              break;
+
+            case 'reconnected':
+              console.log('[SSH] Reconnected to existing session');
               updateStatus('connected');
               break;
 
