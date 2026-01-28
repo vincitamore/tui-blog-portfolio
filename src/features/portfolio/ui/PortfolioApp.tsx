@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState, useMemo } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { fetchProjects, fetchProjectBySlug, createProject, updateProject, deleteProject, reorderProjects } from '../../../shared/lib/api';
