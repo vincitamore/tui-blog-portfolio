@@ -13,6 +13,7 @@ import type { TerminalLine } from '../shared/ui/terminal';
 import { parseCommand, getWelcomeMessage } from '../shared/lib/commands';
 import { initTheme, applyTheme, themes, getStoredTheme } from '../shared/lib/themes';
 import { verifyAdminPassword, setAdminSession, logoutAdmin, changeAdminPassword, getAuthToken, restoreSession } from '../shared/lib/auth';
+import { fetchAdminComments, banIp, unbanIp, deleteComment } from '../shared/lib/api';
 import PortfolioApp from '../features/portfolio/ui/PortfolioApp';
 import BlogApp from '../features/blog/ui/BlogApp';
 import AboutApp from '../features/about/ui/AboutApp';
@@ -181,12 +182,52 @@ const App: React.FC = () => {
     setLines([]);
   }, []);
 
+  // Fetch and display admin dashboard
+  const showDashboard = useCallback(async () => {
+    try {
+      const data = await fetchAdminComments();
+      const lines = [
+        '',
+        '╔════════════════════════════════════════════════════════════════╗',
+        '║                      ADMIN DASHBOARD                          ║',
+        '╠════════════════════════════════════════════════════════════════╣',
+        `║  Total Comments:        ${String(data.totalComments).padEnd(38)}║`,
+        `║  New Since Last Login:  ${String(data.newSinceLastLogin).padEnd(38)}║`,
+        `║  Posts With Comments:   ${String(Object.keys(data.commentsByPost).length).padEnd(38)}║`,
+        '╠════════════════════════════════════════════════════════════════╣',
+        '║  Recent Comments:                                              ║',
+      ];
+
+      if (data.comments.length === 0) {
+        lines.push('║    No comments yet.                                            ║');
+      } else {
+        data.comments.slice(0, 5).forEach(c => {
+          const preview = c.content.slice(0, 40).replace(/\n/g, ' ');
+          const truncated = preview.length < c.content.length ? preview + '...' : preview;
+          lines.push(`║    • ${c.author.slice(0, 12).padEnd(12)} on ${c.postSlug.slice(0, 15).padEnd(15)} ║`);
+          lines.push(`║      "${truncated.padEnd(42)}" ║`);
+        });
+      }
+
+      lines.push('╠════════════════════════════════════════════════════════════════╣');
+      lines.push('║  Commands: dashboard | comments | ban | unban | delete-comment ║');
+      lines.push('╚════════════════════════════════════════════════════════════════╝');
+      lines.push('');
+
+      addLines(lines, 'output');
+    } catch (err) {
+      addLine({ type: 'error', content: 'Failed to load dashboard' });
+    }
+  }, [addLine, addLines]);
+
   // Handle admin login
   const handleAdminLogin = useCallback(() => {
     setAdminSession(true);
     setAdminMode(true);
     addLine({ type: 'success', content: 'Logged in as admin. You now have elevated privileges.' });
-  }, [addLine]);
+    // Show dashboard on login
+    showDashboard();
+  }, [addLine, showDashboard]);
 
   // Handle admin logout
   const handleAdminLogout = useCallback(() => {
@@ -355,6 +396,93 @@ const App: React.FC = () => {
                 });
               break;
             }
+            // Dashboard command
+            if (result.target === 'dashboard') {
+              showDashboard();
+              break;
+            }
+            // Comments list command
+            if (result.target === 'comments') {
+              fetchAdminComments()
+                .then(data => {
+                  if (data.comments.length === 0) {
+                    addLine({ type: 'output', content: 'No comments yet.' });
+                    return;
+                  }
+                  const lines = [
+                    '',
+                    `Recent comments (${data.comments.length} total):`,
+                    '',
+                  ];
+                  data.comments.slice(0, 20).forEach((c, i) => {
+                    const date = new Date(c.createdAt);
+                    const timeAgo = getTimeAgo(date);
+                    const isNew = new Date(c.createdAt).getTime() > new Date(data.lastLogin).getTime();
+                    const newBadge = isNew ? ' [NEW]' : '';
+                    lines.push(`  ${String(i + 1).padStart(2)}. ${c.author.padEnd(15)} ${timeAgo.padEnd(12)} ${c.postSlug}${newBadge}`);
+                    lines.push(`      ID: ${c.id}  IP: ${c.ip}`);
+                    const preview = c.content.slice(0, 60).replace(/\n/g, ' ');
+                    lines.push(`      "${preview}${c.content.length > 60 ? '...' : ''}"`);
+                    lines.push('');
+                  });
+                  if (data.comments.length > 20) {
+                    lines.push(`  ... and ${data.comments.length - 20} more`);
+                    lines.push('');
+                  }
+                  lines.push('  Use: delete-comment <post-slug> <comment-id>');
+                  lines.push('  Use: ban <ip> [reason]');
+                  lines.push('');
+                  addLines(lines, 'output');
+                })
+                .catch(() => {
+                  addLine({ type: 'error', content: 'Failed to fetch comments' });
+                });
+              break;
+            }
+            // Ban IP command
+            if (result.target === 'ban_ip') {
+              try {
+                const { ip, reason } = JSON.parse(result.content || '{}');
+                banIp(ip, reason)
+                  .then(() => {
+                    addLine({ type: 'success', content: `Banned IP: ${ip}` });
+                  })
+                  .catch((err) => {
+                    addLine({ type: 'error', content: err.message || 'Failed to ban IP' });
+                  });
+              } catch {
+                addLine({ type: 'error', content: 'Invalid ban command' });
+              }
+              break;
+            }
+            // Unban IP command
+            if (result.target === 'unban_ip') {
+              const ip = result.content;
+              unbanIp(ip || '')
+                .then(() => {
+                  addLine({ type: 'success', content: `Unbanned IP: ${ip}` });
+                })
+                .catch((err) => {
+                  addLine({ type: 'error', content: err.message || 'Failed to unban IP' });
+                });
+              break;
+            }
+            // Delete comment command
+            if (result.target === 'delete_comment') {
+              try {
+                const { postSlug, commentId } = JSON.parse(result.content || '{}');
+                deleteComment(postSlug, commentId)
+                  .then(() => {
+                    addLine({ type: 'success', content: `Deleted comment ${commentId} from ${postSlug}` });
+                  })
+                  .catch((err) => {
+                    addLine({ type: 'error', content: err.message || 'Failed to delete comment' });
+                  });
+              } catch {
+                addLine({ type: 'error', content: 'Invalid delete command' });
+              }
+              break;
+            }
             if (result.lines) {
               addLines(result.lines, 'output');
             } else if (result.content) {
@@ -398,7 +526,7 @@ const App: React.FC = () => {
 
       setIsProcessing(false);
     },
-    [addLine, addLines, clearTerminal, adminMode, handleAdminLogin, handleAdminLogout],
+    [addLine, addLines, clearTerminal, adminMode, handleAdminLogin, handleAdminLogout, showDashboard],
   );
 
   // Handle back navigation from apps
@@ -667,6 +795,7 @@ const App: React.FC = () => {
         autoTypeCommand={autoTypeCommand}
         onAutoTypeComplete={handleAutoTypeComplete}
         disableFocus={showPasswordPrompt || showPasswordChange}
+        isAdmin={adminMode}
       />
     </motion.div>
   );

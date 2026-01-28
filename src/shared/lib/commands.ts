@@ -68,7 +68,12 @@ const commands: Record<string, CommandHandler> = {
         ...(context?.isAdmin ? [
           '',
           'Admin commands:',
+          '  dashboard         Show admin dashboard',
           '  visitors          View recent visitor logs',
+          '  comments          List recent comments',
+          '  ban <ip>          Ban an IP address',
+          '  unban <ip>        Unban an IP address',
+          '  delete-comment    Delete a comment (interactive)',
           '  passwd            Change admin password',
           '  logout            Exit admin session',
         ] : []),
@@ -77,6 +82,8 @@ const commands: Record<string, CommandHandler> = {
         '  Use arrow keys or vim keys (j/k) to navigate',
         '  Press Enter to select, Esc to go back',
         '  Click on underlined text for quick navigation',
+        '',
+        'Tab completion available for all commands',
         '',
       ],
     }),
@@ -242,6 +249,76 @@ const commands: Record<string, CommandHandler> = {
     },
   },
 
+  dashboard: {
+    description: 'Show admin dashboard',
+    execute: (_args, context) => {
+      if (!context?.isAdmin) {
+        return { type: 'error', content: 'Permission denied. Admin only.' };
+      }
+      // Signal to fetch and display admin dashboard
+      return { type: 'output', target: 'dashboard', content: '' };
+    },
+  },
+
+  comments: {
+    description: 'List recent comments',
+    execute: (_args, context) => {
+      if (!context?.isAdmin) {
+        return { type: 'error', content: 'Permission denied. Admin only.' };
+      }
+      // Signal to fetch and display comments list
+      return { type: 'output', target: 'comments', content: '' };
+    },
+  },
+
+  ban: {
+    description: 'Ban an IP address',
+    usage: 'ban <ip> [reason]',
+    execute: (args, context) => {
+      if (!context?.isAdmin) {
+        return { type: 'error', content: 'Permission denied. Admin only.' };
+      }
+      if (!args[0]) {
+        return { type: 'error', content: 'Usage: ban <ip> [reason]' };
+      }
+      const ip = args[0];
+      const reason = args.slice(1).join(' ') || 'Banned via CLI';
+      // Signal to ban IP - App.tsx will handle the API call
+      return { type: 'output', target: 'ban_ip', content: JSON.stringify({ ip, reason }) };
+    },
+  },
+
+  unban: {
+    description: 'Unban an IP address',
+    usage: 'unban <ip>',
+    execute: (args, context) => {
+      if (!context?.isAdmin) {
+        return { type: 'error', content: 'Permission denied. Admin only.' };
+      }
+      if (!args[0]) {
+        return { type: 'error', content: 'Usage: unban <ip>' };
+      }
+      // Signal to unban IP - App.tsx will handle the API call
+      return { type: 'output', target: 'unban_ip', content: args[0] };
+    },
+  },
+
+  'delete-comment': {
+    description: 'Delete a comment',
+    usage: 'delete-comment <post-slug> <comment-id>',
+    execute: (args, context) => {
+      if (!context?.isAdmin) {
+        return { type: 'error', content: 'Permission denied. Admin only.' };
+      }
+      if (args.length < 2) {
+        return { type: 'error', content: 'Usage: delete-comment <post-slug> <comment-id>' };
+      }
+      const [postSlug, commentId] = args;
+      // Signal to delete comment - App.tsx will handle the API call
+      return { type: 'output', target: 'delete_comment', content: JSON.stringify({ postSlug, commentId }) };
+    },
+  },
+
   neofetch: {
     description: 'System information',
     execute: (_args, context) => {
@@ -344,9 +421,19 @@ export function getWelcomeMessage(): { header: string; footer: string } {
   return { header: ASCII_LOGO_HEADER, footer: ASCII_LOGO_FOOTER };
 }
 
-export function getCommandSuggestions(input: string): string[] {
+// Admin-only commands that should only appear in suggestions when admin
+const adminOnlyCommands = ['dashboard', 'visitors', 'comments', 'ban', 'unban', 'delete-comment', 'passwd', 'logout', 'exit'];
+
+export function getCommandSuggestions(input: string, isAdmin = false): string[] {
   const lower = input.toLowerCase();
-  return Object.keys(commands).filter(
-    (cmd) => cmd.startsWith(lower) && !['?', 'dir', 'cls', 'list', 'open'].includes(cmd),
-  );
+  const hiddenAliases = ['?', 'dir', 'cls', 'list', 'open', 'exit'];
+
+  return Object.keys(commands).filter((cmd) => {
+    // Filter out hidden aliases
+    if (hiddenAliases.includes(cmd)) return false;
+    // Filter out admin commands if not admin
+    if (!isAdmin && adminOnlyCommands.includes(cmd)) return false;
+    // Match prefix
+    return cmd.startsWith(lower);
+  });
 }

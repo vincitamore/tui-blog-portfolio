@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getCommandSuggestions } from '../../lib/commands';
 
 export interface TerminalLine {
   id: string;
@@ -168,6 +169,7 @@ interface TerminalProps {
   autoTypeCommand?: string;
   onAutoTypeComplete?: () => void;
   disableFocus?: boolean; // Disable auto-focus when modals are open
+  isAdmin?: boolean; // For tab completion of admin commands
 }
 
 // Known commands for making them clickable in output
@@ -293,6 +295,7 @@ const Terminal: React.FC<TerminalProps> = ({
   autoTypeCommand,
   onAutoTypeComplete,
   disableFocus = false,
+  isAdmin = false,
 }) => {
   const [input, setInput] = useState('');
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -421,10 +424,46 @@ const Terminal: React.FC<TerminalProps> = ({
         }
       } else if (e.key === 'Tab') {
         e.preventDefault();
-        // TODO: Add tab completion
+        // Tab completion
+        const trimmed = input.trim();
+        if (!trimmed) return;
+
+        // Only complete the first word (command)
+        const parts = trimmed.split(/\s+/);
+        const partial = parts[0].toLowerCase();
+
+        const suggestions = getCommandSuggestions(partial, isAdmin);
+
+        if (suggestions.length === 1) {
+          // Exact match - complete the command
+          if (parts.length > 1) {
+            // Keep the rest of the input
+            setInput(suggestions[0] + ' ' + parts.slice(1).join(' '));
+          } else {
+            setInput(suggestions[0] + ' ');
+          }
+        } else if (suggestions.length > 1) {
+          // Multiple matches - find common prefix
+          const commonPrefix = suggestions.reduce((prefix, suggestion) => {
+            while (!suggestion.startsWith(prefix)) {
+              prefix = prefix.slice(0, -1);
+            }
+            return prefix;
+          }, suggestions[0]);
+
+          if (commonPrefix.length > partial.length) {
+            // Complete to common prefix
+            if (parts.length > 1) {
+              setInput(commonPrefix + ' ' + parts.slice(1).join(' '));
+            } else {
+              setInput(commonPrefix);
+            }
+          }
+          // Show suggestions (could add visual feedback here in the future)
+        }
       }
     },
-    [commandHistory, historyIndex],
+    [commandHistory, historyIndex, input, isAdmin],
   );
 
   const getLineColor = (type: TerminalLine['type']) => {
