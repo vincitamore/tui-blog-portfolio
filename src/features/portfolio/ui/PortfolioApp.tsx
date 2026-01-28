@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { fetchProjects, fetchProjectBySlug, createProject, updateProject, deleteProject, reorderProjects } from '../../../shared/lib/api';
@@ -6,6 +6,7 @@ import type { Project } from '../../../shared/lib/api';
 import { TuiEditor } from '../../../shared/ui/editor';
 import type { EditorData } from '../../../shared/ui/editor';
 import { TouchNav, type NavAction } from '../../../shared/ui/tui';
+import { renderMarkdown } from '../../../shared/lib/markdown';
 
 interface PortfolioAppProps {
   onBack: () => void;
@@ -27,8 +28,6 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [viewingProject, setViewingProject] = useState<Project | null>(null);
 
-  // Debug: Log every render with current state
-  console.log('[RENDER] slug:', slug, 'viewingProject:', viewingProject?.slug, 'location:', window.location.pathname);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,16 +36,10 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
 
   // View a project (updates URL for shareable links)
   const viewProject = useCallback((project: Project | null) => {
-    console.log('[viewProject] called with:', project?.slug || 'null');
-    console.log('[viewProject] current location before navigate:', window.location.pathname);
     setViewingProject(project);
     if (project?.slug) {
-      const targetUrl = `/portfolio/${project.slug}`;
-      console.log('[viewProject] navigating to:', targetUrl);
-      navigate(targetUrl, { replace: true });
-      console.log('[viewProject] location after navigate:', window.location.pathname);
+      navigate(`/portfolio/${project.slug}`, { replace: true });
     } else if (!project) {
-      console.log('[viewProject] navigating to /portfolio (clearing view)');
       navigate('/portfolio', { replace: true });
     }
   }, [navigate]);
@@ -64,28 +57,21 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
   }, []);
 
   // Handle direct URL navigation (when user lands on /portfolio/slug directly)
-  // Only runs once on mount if there's a slug in the URL
   useEffect(() => {
-    console.log('[useEffect slug] slug:', slug, 'viewingProject:', viewingProject?.slug);
     if (!slug) return;
 
-    // Fetch the project for direct navigation
     const loadProject = async () => {
-      console.log('[loadProject] fetching:', slug);
       const project = await fetchProjectBySlug(slug);
-      console.log('[loadProject] got:', project?.slug);
       if (project) {
         setViewingProject(project);
       }
     };
 
     // Only fetch if we don't already have it displayed
-    // (avoids refetching when navigating programmatically)
     if (!viewingProject || viewingProject.slug !== slug) {
-      console.log('[useEffect slug] will fetch because viewingProject mismatch');
       loadProject();
     }
-  }, [slug]); // Only depend on slug, not projects or viewingProject
+  }, [slug]);
 
   // Move project up in the list
   const handleMoveUp = useCallback(async () => {
@@ -146,7 +132,6 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
 
       if (viewingProject) {
         if (e.key === 'Escape' || e.key === 'q') {
-          console.log('[keydown] Escape/q pressed while viewing, calling viewProject(null)');
           e.preventDefault();
           viewProject(null);
         }
@@ -200,7 +185,6 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
           break;
         case 'Escape':
         case 'q':
-          console.log('[keydown list] Escape/q pressed while on LIST (not viewing), calling onBack');
           e.preventDefault();
           onBack();
           break;
@@ -421,7 +405,16 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
               ))}
             </div>
 
-            <p style={{ color: 'var(--term-foreground)' }}>{viewingProject.description}</p>
+            {/* Render full content if available, otherwise just description */}
+            {viewingProject.content ? (
+              <div
+                className="tui-markdown prose prose-invert max-w-none"
+                style={{ color: 'var(--term-foreground)' }}
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(viewingProject.content) }}
+              />
+            ) : (
+              <p style={{ color: 'var(--term-foreground)' }}>{viewingProject.description}</p>
+            )}
 
             <div className="pt-4 space-y-2" style={{ color: 'var(--term-muted)' }}>
               {viewingProject.github && (
@@ -539,6 +532,28 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
                       )}
                     </div>
                   </div>
+                  {/* Technology tags */}
+                  {project.technologies && project.technologies.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {project.technologies.slice(0, 5).map((tech) => (
+                        <span
+                          key={tech}
+                          className="px-1.5 py-0.5 text-xs"
+                          style={{
+                            backgroundColor: 'var(--term-selection)',
+                            color: 'var(--term-secondary)'
+                          }}
+                        >
+                          {tech}
+                        </span>
+                      ))}
+                      {project.technologies.length > 5 && (
+                        <span className="text-xs" style={{ color: 'var(--term-muted)' }}>
+                          +{project.technologies.length - 5}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <div className="text-sm truncate mt-1" style={{ color: 'var(--term-muted)' }}>
                     {project.description}
                   </div>
