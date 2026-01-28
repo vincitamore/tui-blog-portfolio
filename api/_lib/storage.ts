@@ -3,7 +3,7 @@
  * Replaces the file-based storage from the VPS deployment
  */
 
-import { put, list, del } from '@vercel/blob';
+import { put, list } from '@vercel/blob';
 
 /**
  * Read JSON data from Vercel Blob storage
@@ -47,6 +47,7 @@ export async function readJsonBlob<T>(key: string, defaultValue: T): Promise<T> 
 
 /**
  * Write JSON data to Vercel Blob storage
+ * Uses atomic overwrite - no delete-before-write race condition
  */
 export async function writeJsonBlob(key: string, data: unknown): Promise<void> {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
@@ -57,17 +58,14 @@ export async function writeJsonBlob(key: string, data: unknown): Promise<void> {
   }
 
   try {
-    // Delete existing blob if it exists
-    const { blobs } = await list({ prefix: key, token });
-    for (const blob of blobs) {
-      await del(blob.url, { token });
-    }
-
-    // Write new blob with minimal cache time (60s is minimum allowed)
+    // Atomic overwrite - addRandomSuffix defaults to false in v1.0.0+
+    // allowOverwrite enables overwriting existing blob at same path
     const result = await put(key, JSON.stringify(data, null, 2), {
       access: 'public',
       contentType: 'application/json',
       cacheControlMaxAge: 60,
+      addRandomSuffix: false,
+      allowOverwrite: true,
       token,
     });
 
