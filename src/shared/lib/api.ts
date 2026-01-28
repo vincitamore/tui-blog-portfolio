@@ -311,3 +311,79 @@ export async function updateComment(
 
   return res.json();
 }
+
+// ============ ADMIN COMMENT API ============
+
+export interface AdminComment extends Comment {
+  ip: string;
+  authorToken: string;
+}
+
+export interface AdminCommentsResponse {
+  totalComments: number;
+  commentsByPost: Record<string, number>;
+  newSinceLastLogin: number;
+  lastLogin: string;
+  comments: AdminComment[];
+}
+
+export interface BanEntry {
+  ip: string;
+  reason: string;
+  bannedAt: string;
+  bannedBy: string;
+}
+
+// Fetch all comments for admin (includes IP and authorToken)
+export async function fetchAdminComments(): Promise<AdminCommentsResponse> {
+  const res = await fetch(`${API_URL}/api/comments/admin/list`, {
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(res);
+}
+
+// Delete a comment (admin only)
+export async function deleteComment(postSlug: string, commentId: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/comments/${postSlug}/${commentId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  if (res.status === 401) {
+    throw new Error('Admin authentication required');
+  }
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to delete comment');
+  }
+}
+
+// Fetch banned IPs
+export async function fetchBannedIps(): Promise<BanEntry[]> {
+  const res = await fetch(`${API_URL}/api/comments/admin/ban`, {
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(res);
+}
+
+// Ban an IP
+export async function banIp(ip: string, reason?: string): Promise<BanEntry> {
+  const res = await fetch(`${API_URL}/api/comments/admin/ban`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ ip, reason }),
+  });
+  return handleResponse(res);
+}
+
+// Unban an IP
+export async function unbanIp(ip: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/comments/admin/ban`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ ip }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to unban IP');
+  }
+}

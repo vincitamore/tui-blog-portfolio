@@ -9,6 +9,7 @@ import { TuiEditor } from '../../../shared/ui/editor';
 import type { EditorData } from '../../../shared/ui/editor';
 import { TouchNav, type NavAction } from '../../../shared/ui/tui';
 import CommentSection from './comments/CommentSection';
+import { AdminCommentsPanel } from './comments/AdminCommentsPanel';
 
 interface BlogAppProps {
   onBack: () => void;
@@ -34,6 +35,7 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   // Refs for autoscroll on keyboard navigation
   const listItemRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -131,14 +133,24 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
             setIsCreating(true);
           }
           break;
+        case 'm':
+          if (isAdmin) {
+            e.preventDefault();
+            setShowAdminPanel(prev => !prev);
+          }
+          break;
         case 'Escape':
         case 'q':
           e.preventDefault();
-          onBack();
+          if (showAdminPanel) {
+            setShowAdminPanel(false);
+          } else {
+            onBack();
+          }
           break;
       }
     },
-    [posts, selectedIndex, viewingPost, onBack, isAdmin, isCreating, editingPost, showDeleteConfirm, viewPost],
+    [posts, selectedIndex, viewingPost, onBack, isAdmin, isCreating, editingPost, showDeleteConfirm, showAdminPanel, viewPost],
   );
 
   useEffect(() => {
@@ -218,8 +230,13 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
     const actions: NavAction[] = [];
     if (isAdmin) {
       actions.push({ key: 'n', label: 'New', onClick: () => setIsCreating(true) });
+      actions.push({
+        key: 'm',
+        label: showAdminPanel ? 'Posts' : 'Moderate',
+        onClick: () => setShowAdminPanel(prev => !prev)
+      });
     }
-    actions.push({ key: 'q', label: 'Back', onClick: onBack });
+    actions.push({ key: 'q', label: 'Back', onClick: showAdminPanel ? () => setShowAdminPanel(false) : onBack });
     return actions;
   };
 
@@ -386,6 +403,15 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
     );
   }
 
+  // Navigate to a post from admin panel
+  const handleNavigateToPost = useCallback((postSlug: string) => {
+    const post = posts.find(p => p.slug === postSlug);
+    if (post) {
+      viewPost(post);
+      setShowAdminPanel(false);
+    }
+  }, [posts, viewPost]);
+
   // Show post list
   return (
     <div className="h-full flex flex-col" style={{ color: 'var(--term-foreground)' }}>
@@ -395,15 +421,19 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
         style={{ borderColor: 'var(--term-border)' }}
       >
         <span style={{ color: 'var(--term-primary)' }}>
-          BLOG {isAdmin && <span style={{ color: 'var(--term-success)' }}>[ADMIN]</span>}
+          {showAdminPanel ? 'COMMENT MODERATION' : 'BLOG'} {isAdmin && <span style={{ color: 'var(--term-success)' }}>[ADMIN]</span>}
         </span>
         <span className="hidden sm:block text-sm" style={{ color: 'var(--term-muted)' }}>
-          {posts.length} posts | [j/k] nav | [Enter] read
+          {showAdminPanel ? '[m] posts | [q] back' : `${posts.length} posts | [j/k] nav | [Enter] read${isAdmin ? ' | [m] moderate' : ''}`}
         </span>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-auto p-4">
+        {showAdminPanel ? (
+          <AdminCommentsPanel onNavigateToPost={handleNavigateToPost} />
+        ) : (
+          <>
         {saveStatus === 'saved' && (
           <div className="mb-4 px-2 py-1 text-sm" style={{ color: 'var(--term-success)' }}>
             Post saved successfully!
@@ -461,6 +491,8 @@ const BlogApp: React.FC<BlogAppProps> = ({ onBack, isAdmin = false }) => {
               </motion.div>
             ))}
           </div>
+        )}
+          </>
         )}
       </div>
 
