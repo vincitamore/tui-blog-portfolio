@@ -60,13 +60,46 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     }, [onDisconnect]),
   });
 
-  // Detect mobile
+  // Detect mobile and handle visual viewport for keyboard
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
+
+    // Visual viewport API for mobile keyboard handling
+    const viewport = window.visualViewport;
+    if (viewport) {
+      const handleViewportResize = () => {
+        // When keyboard opens, viewport height shrinks
+        const wrapper = document.querySelector('.ssh-terminal-wrapper') as HTMLElement;
+        if (wrapper) {
+          const keyboardHeight = window.innerHeight - viewport.height;
+          if (keyboardHeight > 100) {
+            // Keyboard is likely open - adjust padding
+            wrapper.style.paddingBottom = `${60 + keyboardHeight}px`;
+            wrapper.classList.add('keyboard-open');
+          } else {
+            // Keyboard closed
+            wrapper.style.paddingBottom = '';
+            wrapper.classList.remove('keyboard-open');
+          }
+          // Trigger xterm fit
+          fitAddonRef.current?.fit();
+        }
+      };
+
+      viewport.addEventListener('resize', handleViewportResize);
+      viewport.addEventListener('scroll', handleViewportResize);
+
+      return () => {
+        window.removeEventListener('resize', checkMobile);
+        viewport.removeEventListener('resize', handleViewportResize);
+        viewport.removeEventListener('scroll', handleViewportResize);
+      };
+    }
+
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
@@ -92,32 +125,37 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
   useEffect(() => {
     if (!terminalRef.current) return;
 
-    // Create terminal
+    // Get theme colors from CSS variables
+    const computedStyle = getComputedStyle(document.documentElement);
+    const getVar = (name: string, fallback: string) =>
+      computedStyle.getPropertyValue(name).trim() || fallback;
+
+    // Create terminal with theme from CSS variables
     const term = new Terminal({
       cursorBlink: true,
       fontSize: 14,
       fontFamily: 'JetBrains Mono, Menlo, Monaco, Consolas, monospace',
       theme: {
-        background: '#1a1a2e',
-        foreground: '#e0e0e0',
-        cursor: '#e0e0e0',
-        cursorAccent: '#1a1a2e',
-        selectionBackground: '#6366f1',
-        black: '#000000',
-        red: '#ff5555',
-        green: '#50fa7b',
-        yellow: '#f1fa8c',
-        blue: '#bd93f9',
-        magenta: '#ff79c6',
-        cyan: '#8be9fd',
-        white: '#f8f8f2',
-        brightBlack: '#6272a4',
-        brightRed: '#ff6e6e',
-        brightGreen: '#69ff94',
-        brightYellow: '#ffffa5',
-        brightBlue: '#d6acff',
-        brightMagenta: '#ff92df',
-        brightCyan: '#a4ffff',
+        background: getVar('--term-background', '#1a1a2e'),
+        foreground: getVar('--term-foreground', '#e0e0e0'),
+        cursor: getVar('--term-primary', '#e0e0e0'),
+        cursorAccent: getVar('--term-background', '#1a1a2e'),
+        selectionBackground: getVar('--term-selection', '#6366f1'),
+        black: getVar('--term-background', '#000000'),
+        red: getVar('--term-error', '#ff5555'),
+        green: getVar('--term-success', '#50fa7b'),
+        yellow: getVar('--term-warning', '#f1fa8c'),
+        blue: getVar('--term-primary', '#bd93f9'),
+        magenta: getVar('--term-secondary', '#ff79c6'),
+        cyan: getVar('--term-info', '#8be9fd'),
+        white: getVar('--term-foreground', '#f8f8f2'),
+        brightBlack: getVar('--term-muted', '#6272a4'),
+        brightRed: getVar('--term-error', '#ff6e6e'),
+        brightGreen: getVar('--term-accent', '#69ff94'),
+        brightYellow: getVar('--term-warning', '#ffffa5'),
+        brightBlue: getVar('--term-primary', '#d6acff'),
+        brightMagenta: getVar('--term-secondary', '#ff92df'),
+        brightCyan: getVar('--term-info', '#a4ffff'),
         brightWhite: '#ffffff',
       },
       scrollback: 10000,

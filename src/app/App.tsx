@@ -909,13 +909,17 @@ const App: React.FC = () => {
         <AnimatePresence>{PasswordChangeModal}</AnimatePresence>
       </TerminalWindow>
 
-      {/* Status indicators */}
-      <div className="fixed bottom-4 right-4 flex gap-2 text-xs z-20">
+      {/* Status indicators - move up in SSH mode on mobile to not overlap command bar */}
+      <div
+        className={`fixed right-4 flex gap-2 text-xs z-20 transition-all ${
+          sshMode ? 'bottom-20 md:bottom-4 hidden sm:flex' : 'bottom-4'
+        }`}
+      >
         {adminMode && (
           <div
             className="px-2 py-1 rounded"
-            style={{ 
-              color: 'var(--term-success)', 
+            style={{
+              color: 'var(--term-success)',
               backgroundColor: 'var(--term-selection)',
               boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
             }}
@@ -925,8 +929,8 @@ const App: React.FC = () => {
         )}
         <div
           className="px-2 py-1 rounded"
-          style={{ 
-            color: 'var(--term-muted)', 
+          style={{
+            color: 'var(--term-muted)',
             backgroundColor: 'var(--term-selection)',
             boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
           }}

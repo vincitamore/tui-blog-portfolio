@@ -1,5 +1,6 @@
 /**
  * SSH Terminal Styles
+ * Integrates with tui-blog theme system via CSS variables
  */
 
 .ssh-terminal-wrapper {
@@ -7,7 +8,7 @@
   flex-direction: column;
   height: 100%;
   width: 100%;
-  background: #1a1a2e;
+  background: var(--term-background, #1a1a2e);
 }
 
 /* Status bar */
@@ -15,10 +16,11 @@
   display: flex;
   align-items: center;
   padding: 8px 12px;
-  background: var(--bg-secondary, #252536);
-  border-bottom: 1px solid var(--border-color, #333);
+  background: var(--term-selection, #252536);
+  border-bottom: 1px solid var(--term-border, #333);
   font-size: 13px;
-  color: var(--fg-secondary, #888);
+  color: var(--term-muted, #888);
+  flex-shrink: 0;
 }
 
 .ssh-status-indicator {
@@ -26,25 +28,25 @@
   height: 8px;
   border-radius: 50%;
   margin-right: 8px;
-  background: #888;
+  background: var(--term-muted, #888);
 }
 
 .ssh-status-connecting .ssh-status-indicator,
 .ssh-status-authenticating .ssh-status-indicator {
-  background: #f59e0b;
+  background: var(--term-warning, #f59e0b);
   animation: pulse 1s ease-in-out infinite;
 }
 
 .ssh-status-connected .ssh-status-indicator {
-  background: #10b981;
+  background: var(--term-success, #10b981);
 }
 
 .ssh-status-error .ssh-status-indicator {
-  background: #ef4444;
+  background: var(--term-error, #ef4444);
 }
 
 .ssh-status-disconnected .ssh-status-indicator {
-  background: #6b7280;
+  background: var(--term-muted, #6b7280);
 }
 
 @keyframes pulse {
@@ -64,17 +66,17 @@
   padding: 4px 12px;
   font-size: 12px;
   font-family: inherit;
-  color: var(--fg-secondary, #888);
+  color: var(--term-muted, #888);
   background: transparent;
-  border: 1px solid var(--border-color, #444);
+  border: 1px solid var(--term-border, #444);
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.1s, color 0.1s;
 }
 
 .ssh-disconnect-btn:hover {
-  background: var(--bg-tertiary, #2f2f44);
-  color: var(--fg-primary, #e0e0e0);
+  background: var(--term-selection, #2f2f44);
+  color: var(--term-foreground, #e0e0e0);
 }
 
 /* Terminal container */
@@ -82,6 +84,7 @@
   flex: 1;
   overflow: hidden;
   padding: 8px;
+  min-height: 0; /* Important for flex children */
 }
 
 /* Ensure xterm fills container */
@@ -93,9 +96,15 @@
   overflow-y: auto !important;
 }
 
-/* Account for mobile command bar */
+/* Mobile: account for command bar */
 @media (max-width: 767px) {
   .ssh-terminal-wrapper {
-    padding-bottom: 60px; /* Space for command bar */
+    /* Use env() for safe area, with fallback for command bar height */
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* When visual viewport API updates height, this gets overridden by JS */
+  .ssh-terminal-wrapper.keyboard-open {
+    /* Handled by JavaScript for dynamic keyboard height */
   }
 }
