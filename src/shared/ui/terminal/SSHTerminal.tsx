@@ -90,8 +90,17 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
             wrapper.style.paddingBottom = '';
             wrapper.classList.remove('keyboard-open');
           }
-          // Trigger xterm fit
-          fitAddonRef.current?.fit();
+          // Trigger xterm fit after a brief delay for layout to settle
+          setTimeout(() => {
+            if (fitAddonRef.current && xtermRef.current) {
+              fitAddonRef.current.fit();
+              // Send new size to server
+              const term = xtermRef.current;
+              if (term.cols && term.rows) {
+                resizeRef.current(term.cols, term.rows);
+              }
+            }
+          }, 50);
         }
       };
 
@@ -138,10 +147,13 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     // Create terminal with theme from CSS variables
     const term = new Terminal({
       cursorBlink: true,
+      cursorStyle: 'block',
       fontSize: 14,
       fontFamily: 'JetBrains Mono, Menlo, Monaco, Consolas, monospace',
       // Disable screen reader mode which can cause input issues on mobile
       screenReaderMode: false,
+      // Let xterm handle its own rendering
+      allowTransparency: false,
       theme: {
         background: getVar('--term-background', '#1a1a2e'),
         foreground: getVar('--term-foreground', '#e0e0e0'),

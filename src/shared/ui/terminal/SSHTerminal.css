@@ -11,7 +11,6 @@
   background: var(--term-background, #1a1a2e);
   /* Prevent pull-to-refresh on mobile */
   overscroll-behavior: none;
-  touch-action: pan-x pan-y;
 }
 
 /* Status bar */
@@ -82,59 +81,79 @@
   color: var(--term-foreground, #e0e0e0);
 }
 
-/* Terminal container */
+/* Terminal container - no padding, let xterm handle everything */
 .ssh-terminal-container {
   flex: 1;
   overflow: hidden;
-  padding: 8px;
-  min-height: 0; /* Important for flex children */
-  /* Prevent pull-to-refresh when scrolling terminal */
+  min-height: 0;
+  /* Small margin instead of padding so fit addon calculates correctly */
+  margin: 4px;
+  /* Prevent pull-to-refresh */
   overscroll-behavior: contain;
-  /* Allow our custom touch scroll handlers to work on mobile */
-  touch-action: none;
+  /* Position relative for absolute children */
+  position: relative;
 }
 
-/* Re-enable touch-action for xterm canvas for text selection */
-.ssh-terminal-container .xterm-screen {
-  touch-action: manipulation;
-}
-
-/* Mobile: hide IME composition UI without breaking xterm's cursor positioning */
-@media (max-width: 767px) {
-  .ssh-terminal-container .xterm-helper-textarea {
-    /* Hide the text and caret but let xterm position it */
-    color: transparent !important;
-    caret-color: transparent !important;
-    background: transparent !important;
-    /* Remove any visible borders/outlines */
-    border: none !important;
-    outline: none !important;
-    /* Prevent text from being visible during composition */
-    text-shadow: none !important;
-    -webkit-text-fill-color: transparent !important;
-  }
-}
-
-/* Ensure xterm fills container */
+/* Ensure xterm fills container completely */
 .ssh-terminal-container .xterm {
   height: 100%;
+  width: 100%;
 }
 
+/* xterm viewport scrolling */
 .ssh-terminal-container .xterm-viewport {
   overflow-y: auto !important;
-  /* Prevent pull-to-refresh when at top of scroll */
   overscroll-behavior: contain;
+}
+
+/* Ensure xterm screen layers are properly stacked */
+.ssh-terminal-container .xterm-screen {
+  position: relative;
+}
+
+/*
+ * Helper textarea - this captures keyboard input
+ * Must be invisible but functional, and let xterm position it
+ */
+.ssh-terminal-container .xterm-helper-textarea {
+  /* Make text invisible */
+  color: transparent !important;
+  background: transparent !important;
+  caret-color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  /* Remove all visual styling */
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  /* Prevent resize handle */
+  resize: none !important;
+  /* Remove any browser-specific styling */
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  /* Ensure it doesn't create visual artifacts */
+  opacity: 1; /* Keep opaque so it receives events */
+  overflow: hidden !important;
 }
 
 /* Mobile: account for command bar */
 @media (max-width: 767px) {
   .ssh-terminal-wrapper {
-    /* Use env() for safe area, with fallback for command bar height */
+    /* Space for command bar + safe area */
     padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
   }
 
-  /* When visual viewport API updates height, this gets overridden by JS */
-  .ssh-terminal-wrapper.keyboard-open {
-    /* Handled by JavaScript for dynamic keyboard height */
+  /* Slightly smaller font on mobile for more content */
+  .ssh-terminal-container .xterm {
+    font-size: 12px;
+  }
+
+  /* Touch handling for scroll */
+  .ssh-terminal-container {
+    touch-action: none;
+  }
+
+  .ssh-terminal-container .xterm-screen {
+    touch-action: pan-y;
   }
 }
