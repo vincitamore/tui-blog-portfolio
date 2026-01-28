@@ -8,12 +8,30 @@ import { verifyAuth } from '../_lib/auth.js';
 
 interface Project {
   id: string;
+  slug: string;
   title: string;
   description: string;
   technologies: string[];
   github?: string | null;
   link?: string | null;
   image?: string;
+}
+
+// Generate URL-friendly slug from title
+function generateSlug(title: string, existingSlugs: string[]): string {
+  let slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+
+  // Ensure uniqueness
+  let uniqueSlug = slug;
+  let counter = 1;
+  while (existingSlugs.includes(uniqueSlug)) {
+    uniqueSlug = `${slug}-${counter}`;
+    counter++;
+  }
+  return uniqueSlug;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -44,14 +62,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
       const projects = await readJsonBlob<Project[]>(CONTENT_KEYS.PORTFOLIO, []);
+      const existingSlugs = projects.map(p => p.slug).filter(Boolean);
       const newProject: Project = {
         ...req.body,
         id: Date.now().toString(),
+        slug: req.body.slug || generateSlug(req.body.title, existingSlugs),
       };
-      
+
       projects.unshift(newProject);
       await writeJsonBlob(CONTENT_KEYS.PORTFOLIO, projects);
-      
+
       return res.json(newProject);
     } catch (error) {
       console.error('Error creating project:', error);

@@ -89,6 +89,7 @@ export async function deleteBlogPost(slug: string): Promise<void> {
 
 export interface Project {
   id?: string;
+  slug?: string;
   title: string;
   description: string;
   technologies: string[];
@@ -105,6 +106,18 @@ export async function fetchProjects(): Promise<Project[]> {
   } catch (err) {
     console.error('API Error:', err);
     return [];
+  }
+}
+
+export async function fetchProjectBySlug(slug: string): Promise<Project | null> {
+  try {
+    const res = await fetch(`${API_URL}/api/portfolio/slug/${slug}`);
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error('Failed to fetch project');
+    return res.json();
+  } catch (err) {
+    console.error('API Error:', err);
+    return null;
   }
 }
 

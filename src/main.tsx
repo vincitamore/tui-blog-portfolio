@@ -29,6 +29,7 @@
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import App from './app/App.tsx';
 import './index.css';
 
@@ -42,10 +43,12 @@ if (!rootElement) {
   );
 }
 
-// Create fiber root and render App within StrictMode
+// Create fiber root and render App within StrictMode + BrowserRouter
 const root = createRoot(rootElement);
 root.render(
   <StrictMode>
-    <App />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </StrictMode>,
 );

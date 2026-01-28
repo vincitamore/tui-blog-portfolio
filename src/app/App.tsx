@@ -5,7 +5,8 @@
  * Users type commands or click on interactive elements.
  */
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Terminal, TerminalWindow } from '../shared/ui/terminal';
 import type { TerminalLine } from '../shared/ui/terminal';
@@ -17,6 +18,24 @@ import BlogApp from '../features/blog/ui/BlogApp';
 import AboutApp from '../features/about/ui/AboutApp';
 
 type AppScreen = 'terminal' | 'portfolio' | 'blog' | 'about';
+
+// Map URL paths to screen names
+const pathToScreen = (pathname: string): AppScreen => {
+  if (pathname.startsWith('/portfolio')) return 'portfolio';
+  if (pathname.startsWith('/blog')) return 'blog';
+  if (pathname.startsWith('/about')) return 'about';
+  return 'terminal';
+};
+
+// Map screen names to URL paths
+const screenToPath = (screen: AppScreen): string => {
+  switch (screen) {
+    case 'portfolio': return '/portfolio';
+    case 'blog': return '/blog';
+    case 'about': return '/about';
+    default: return '/';
+  }
+};
 
 let lineIdCounter = 0;
 const generateLineId = () => `line-${++lineIdCounter}`;
@@ -64,7 +83,9 @@ const getTimeAgo = (date: Date): string => {
 };
 
 const App: React.FC = () => {
-  const [currentScreen, setCurrentScreen] = useState<AppScreen>('terminal');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentScreen = useMemo(() => pathToScreen(location.pathname), [location.pathname]);
   const [lines, setLines] = useState<TerminalLine[]>([]);
   const [currentTheme, setCurrentTheme] = useState('dracula');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -357,7 +378,7 @@ const App: React.FC = () => {
             if (result.target) {
               // Add a small delay before navigation for effect
               await new Promise((resolve) => setTimeout(resolve, 300));
-              setCurrentScreen(result.target as AppScreen);
+              navigate(screenToPath(result.target as AppScreen));
             }
           break;
 
@@ -383,8 +404,8 @@ const App: React.FC = () => {
   // Handle back navigation from apps
   const handleBack = useCallback(() => {
     addLine({ type: 'info', content: 'Returned to terminal' });
-    setCurrentScreen('terminal');
-  }, [addLine]);
+    navigate('/');
+  }, [addLine, navigate]);
 
   // Welcome message component - ASCII art stays small, text below is larger on mobile
   const welcomeBanner = getWelcomeMessage();
@@ -626,76 +647,43 @@ const App: React.FC = () => {
     </motion.div>
   );
 
-  // Render current screen
-  const renderScreen = () => {
-    switch (currentScreen) {
-      case 'portfolio':
-        return (
-          <motion.div
-            key="portfolio"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.2 }}
-            className="h-full"
-          >
-            <PortfolioApp onBack={handleBack} isAdmin={adminMode} />
-          </motion.div>
-        );
+  // Terminal component for the home route
+  const TerminalScreen = (
+    <motion.div
+      key="terminal"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="h-full"
+    >
+      <Terminal
+        lines={lines}
+        prompt="~"
+        username={adminMode ? 'admin' : 'visitor'}
+        onCommand={handleCommand}
+        isProcessing={isProcessing}
+        welcomeMessage={WelcomeMessage}
+        autoTypeCommand={autoTypeCommand}
+        onAutoTypeComplete={handleAutoTypeComplete}
+        disableFocus={showPasswordPrompt || showPasswordChange}
+      />
+    </motion.div>
+  );
 
-      case 'blog':
-        return (
-          <motion.div
-            key="blog"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.2 }}
-            className="h-full"
-          >
-            <BlogApp onBack={handleBack} isAdmin={adminMode} />
-          </motion.div>
-        );
-
-      case 'about':
-        return (
-          <motion.div
-            key="about"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.2 }}
-            className="h-full"
-          >
-            <AboutApp onBack={handleBack} />
-          </motion.div>
-      );
-
-      default:
-        return (
-          <motion.div
-            key="terminal"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="h-full"
-          >
-            <Terminal
-              lines={lines}
-              prompt="~"
-              username={adminMode ? 'admin' : 'visitor'}
-              onCommand={handleCommand}
-              isProcessing={isProcessing}
-              welcomeMessage={WelcomeMessage}
-              autoTypeCommand={autoTypeCommand}
-              onAutoTypeComplete={handleAutoTypeComplete}
-              disableFocus={showPasswordPrompt || showPasswordChange}
-            />
-          </motion.div>
-        );
-    }
-  };
+  // Animated wrapper for sub-apps
+  const AnimatedApp = ({ children }: { children: React.ReactNode }) => (
+    <motion.div
+      key={location.pathname}
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{ duration: 0.2 }}
+      className="h-full"
+    >
+      {children}
+    </motion.div>
+  );
 
   return (
     <div
@@ -719,12 +707,33 @@ const App: React.FC = () => {
       <TerminalWindow
         title={`${adminMode ? 'admin' : 'visitor'}@amore.build:~/${currentScreen === 'terminal' ? '' : currentScreen}`}
         className="w-full max-w-6xl relative z-10"
-        style={{ 
-          height: `calc(100dvh - 1rem - ${inAppPadding}px)`, 
-          maxHeight: `calc(100dvh - 1rem - ${inAppPadding}px)` 
+        style={{
+          height: `calc(100dvh - 1rem - ${inAppPadding}px)`,
+          maxHeight: `calc(100dvh - 1rem - ${inAppPadding}px)`
         }}
       >
-        <AnimatePresence mode="wait">{renderScreen()}</AnimatePresence>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={TerminalScreen} />
+            <Route path="/portfolio/*" element={
+              <AnimatedApp>
+                <PortfolioApp onBack={handleBack} isAdmin={adminMode} />
+              </AnimatedApp>
+            } />
+            <Route path="/blog/*" element={
+              <AnimatedApp>
+                <BlogApp onBack={handleBack} isAdmin={adminMode} />
+              </AnimatedApp>
+            } />
+            <Route path="/about" element={
+              <AnimatedApp>
+                <AboutApp onBack={handleBack} />
+              </AnimatedApp>
+            } />
+            {/* Fallback to terminal for unknown routes */}
+            <Route path="*" element={TerminalScreen} />
+          </Routes>
+        </AnimatePresence>
         <AnimatePresence>{PasswordPrompt}</AnimatePresence>
         <AnimatePresence>{PasswordChangeModal}</AnimatePresence>
       </TerminalWindow>

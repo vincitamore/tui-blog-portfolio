@@ -1,6 +1,7 @@
 import React, { useEffect, useCallback, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { fetchProjects, createProject, updateProject, deleteProject, reorderProjects } from '../../../shared/lib/api';
+import { fetchProjects, fetchProjectBySlug, createProject, updateProject, deleteProject, reorderProjects } from '../../../shared/lib/api';
 import type { Project } from '../../../shared/lib/api';
 import { TuiEditor } from '../../../shared/ui/editor';
 import type { EditorData } from '../../../shared/ui/editor';
@@ -18,6 +19,8 @@ interface PortfolioAppProps {
  * Touch-friendly navigation for mobile users
  */
 const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) => {
+  const { slug } = useParams<{ slug?: string }>();
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [viewingProject, setViewingProject] = useState<Project | null>(null);
@@ -27,12 +30,40 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // View a project (updates URL for shareable links)
+  const viewProject = useCallback((project: Project | null) => {
+    setViewingProject(project);
+    if (project?.slug) {
+      navigate(`/portfolio/${project.slug}`, { replace: true });
+    } else if (!project) {
+      navigate('/portfolio', { replace: true });
+    }
+  }, [navigate]);
+
+  // Load projects and handle direct slug navigation
   useEffect(() => {
     setIsLoading(true);
-    fetchProjects()
-      .then(setProjects)
-      .finally(() => setIsLoading(false));
-  }, []);
+
+    const loadData = async () => {
+      const allProjects = await fetchProjects();
+      setProjects(allProjects);
+
+      // If we have a slug in URL, load that project directly
+      if (slug) {
+        const project = await fetchProjectBySlug(slug);
+        if (project) {
+          setViewingProject(project);
+          // Find the index for keyboard navigation
+          const idx = allProjects.findIndex(p => p.slug === slug);
+          if (idx >= 0) setSelectedIndex(idx);
+        }
+      }
+
+      setIsLoading(false);
+    };
+
+    loadData();
+  }, [slug]);
 
   // Move project up in the list
   const handleMoveUp = useCallback(async () => {
@@ -94,7 +125,7 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
       if (viewingProject) {
         if (e.key === 'Escape' || e.key === 'q') {
           e.preventDefault();
-          setViewingProject(null);
+          viewProject(null);
         }
         if (isAdmin && e.key === 'e') {
           e.preventDefault();
@@ -135,7 +166,7 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
         case 'Enter':
           e.preventDefault();
           if (projects[selectedIndex]) {
-            setViewingProject(projects[selectedIndex]);
+            viewProject(projects[selectedIndex]);
           }
           break;
         case 'n':
@@ -196,7 +227,7 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
         link: data.link || undefined,
       });
       setProjects(prev => prev.map(p => p.id === editingProject.id ? updated : p));
-      setViewingProject(updated);
+      viewProject(updated);
       setEditingProject(null);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
@@ -213,7 +244,7 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
     try {
       await deleteProject(viewingProject.id);
       setProjects(prev => prev.filter(p => p.id !== viewingProject.id));
-      setViewingProject(null);
+      viewProject(null);
       setShowDeleteConfirm(false);
       setSelectedIndex(0);
     } catch (err) {
@@ -240,7 +271,7 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
       actions.push({ key: 'e', label: 'Edit', onClick: () => viewingProject && setEditingProject(viewingProject) });
       actions.push({ key: 'd', label: 'Delete', onClick: () => setShowDeleteConfirm(true), variant: 'danger' });
     }
-    actions.push({ key: 'q', label: 'Back', onClick: () => setViewingProject(null) });
+    actions.push({ key: 'q', label: 'Back', onClick: () => viewProject(null) });
     return actions;
   };
 
@@ -446,7 +477,7 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
                 transition={{ duration: 0.15 }}
                 onClick={() => {
                   setSelectedIndex(index);
-                  setViewingProject(project);
+                  viewProject(project);
                 }}
                 className="flex items-start gap-3 px-2 py-3 cursor-pointer transition-colors touch-manipulation"
                 style={{

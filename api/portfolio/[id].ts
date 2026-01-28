@@ -8,6 +8,7 @@ import { verifyAuth } from '../_lib/auth.js';
 
 interface Project {
   id: string;
+  slug: string;
   title: string;
   description: string;
   technologies: string[];

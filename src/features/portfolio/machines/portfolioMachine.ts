@@ -5,6 +5,7 @@ import { assign, createMachine, type ActorRefFrom } from 'xstate';
  */
 export interface Project {
   id: string;
+  slug?: string;
   title: string;
   description: string;
   technologies: string[];
