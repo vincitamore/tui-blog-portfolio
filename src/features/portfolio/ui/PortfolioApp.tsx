@@ -196,6 +196,7 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
       const newProject = await createProject({
         title: data.title,
         description: data.description,
+        content: data.content || undefined,
         technologies: data.technologies ? data.technologies.split(',').map(t => t.trim()).filter(Boolean) : [],
         github: data.github || undefined,
         link: data.link || undefined,
@@ -222,6 +223,7 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
       const updated = await updateProject(editingProject.id, {
         title: data.title,
         description: data.description,
+        content: data.content || undefined,
         technologies: data.technologies ? data.technologies.split(',').map(t => t.trim()).filter(Boolean) : [],
         github: data.github || undefined,
         link: data.link || undefined,
@@ -285,7 +287,8 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
           { name: 'technologies', label: 'Technologies', type: 'tags', placeholder: 'React, TypeScript, Node.js' },
           { name: 'github', label: 'GitHub URL', type: 'text', placeholder: 'https://github.com/user/repo' },
           { name: 'link', label: 'Live URL', type: 'text', placeholder: 'https://myproject.com' },
-          { name: 'description', label: 'Description', type: 'textarea', required: true, placeholder: 'Describe your project...' },
+          { name: 'description', label: 'Description', type: 'textarea', required: true, placeholder: 'Brief description (shown in grid)...' },
+          { name: 'content', label: 'Full Content (Markdown)', type: 'textarea', placeholder: '# Overview\n\nFull project writeup with markdown support...' },
         ]}
         onSave={handleSaveProject}
         onCancel={() => setIsCreating(false)}
@@ -303,7 +306,8 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
           { name: 'technologies', label: 'Technologies', type: 'tags', placeholder: 'React, TypeScript, Node.js' },
           { name: 'github', label: 'GitHub URL', type: 'text', placeholder: 'https://github.com/user/repo' },
           { name: 'link', label: 'Live URL', type: 'text', placeholder: 'https://myproject.com' },
-          { name: 'description', label: 'Description', type: 'textarea', required: true, placeholder: 'Describe your project...' },
+          { name: 'description', label: 'Description', type: 'textarea', required: true, placeholder: 'Brief description (shown in grid)...' },
+          { name: 'content', label: 'Full Content (Markdown)', type: 'textarea', placeholder: '# Overview\n\nFull project writeup with markdown support...' },
         ]}
         initialData={{
           title: editingProject.title,
@@ -311,6 +315,7 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
           github: editingProject.github || '',
           link: editingProject.link || '',
           description: editingProject.description,
+          content: editingProject.content || '',
         }}
         onSave={handleUpdateProject}
         onCancel={() => setEditingProject(null)}

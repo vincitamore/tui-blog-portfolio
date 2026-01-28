@@ -1,6 +1,7 @@
 import React from 'react';
 import { ExternalLink, Github } from 'lucide-react';
 import type { Project } from '../machines/portfolioMachine';
+import { renderMarkdown } from '../../../shared/lib/markdown';
 
 interface ProjectDetailProps {
   project: Project;
@@ -51,7 +52,14 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project }) => {
         </div>
       </header>
       <div className="prose prose-invert prose-green max-w-none">
-        <p className="text-lg text-ansi-green/90 leading-relaxed">{project.description}</p>
+        {project.content ? (
+          <div
+            className="tui-markdown text-ansi-green/90 leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(project.content) }}
+          />
+        ) : (
+          <p className="text-lg text-ansi-green/90 leading-relaxed">{project.description}</p>
+        )}
       </div>
       <footer className="mt-8 pt-4 border-t border-ansi-green/30 text-center text-xs text-ansi-green/60">
         Press Esc to return to projects

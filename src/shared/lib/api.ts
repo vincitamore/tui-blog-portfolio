@@ -92,6 +92,7 @@ export interface Project {
   slug?: string;
   title: string;
   description: string;
+  content?: string;  // Full markdown content for detailed view
   technologies: string[];
   github?: string;
   link?: string;
