@@ -48,30 +48,39 @@ export async function readJsonBlob<T>(key: string, defaultValue: T): Promise<T> 
 
 /**
  * Write JSON data to Vercel Blob storage
+ *
+ * Uses addRandomSuffix: false for stable blob paths. This means put()
+ * overwrites the existing blob atomically, eliminating the race condition
+ * that existed with delete-then-write (where reads during the gap found
+ * no blob and returned empty data).
  */
 export async function writeJsonBlob(key: string, data: unknown): Promise<void> {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
-  
+
   if (!token) {
     console.error('BLOB_READ_WRITE_TOKEN is not set');
     throw new Error('Storage not configured: BLOB_READ_WRITE_TOKEN missing');
   }
-  
+
   try {
-    // Delete existing blob if it exists
-    const { blobs } = await list({ prefix: key, token });
-    for (const blob of blobs) {
-      await del(blob.url, { token });
-    }
-    
-    // Write new blob
+    // Write new blob first (atomic overwrite with stable path)
     const result = await put(key, JSON.stringify(data, null, 2), {
       access: 'public',
       contentType: 'application/json',
+      addRandomSuffix: false,
       token,
     });
-    
+
     console.log(`Wrote blob: ${key} -> ${result.url}`);
+
+    // Clean up any old blobs with random suffixes from before this fix
+    const { blobs } = await list({ prefix: key, token });
+    for (const blob of blobs) {
+      if (blob.url !== result.url) {
+        await del(blob.url, { token });
+        console.log(`Cleaned up old blob: ${blob.pathname}`);
+      }
+    }
   } catch (error) {
     console.error(`Error writing blob ${key}:`, error);
     throw error;
