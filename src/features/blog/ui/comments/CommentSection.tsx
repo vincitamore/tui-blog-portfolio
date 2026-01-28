@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
-import { fetchComments, createComment, getSavedAuthorName } from '../../../../shared/lib/api';
+import {
+  fetchComments,
+  createComment,
+  updateComment,
+  getSavedAuthorName,
+  isOwnComment,
+} from '../../../../shared/lib/api';
 import type { Comment } from '../../../../shared/lib/api';
 import { renderMarkdown } from '../../../../shared/lib/markdown';
 
@@ -37,11 +43,13 @@ function buildCommentTree(comments: Comment[]): CommentNode[] {
   return roots;
 }
 
-// Single comment component with reply functionality
+// Single comment component with reply and edit functionality
 interface CommentItemProps {
   comment: CommentNode;
   depth: number;
+  postSlug: string;
   onReply: (comment: Comment) => void;
+  onUpdate: (updatedComment: Comment) => void;
   collapsedThreads: Set<string>;
   toggleCollapse: (id: string) => void;
 }
@@ -49,13 +57,55 @@ interface CommentItemProps {
 const CommentItem: React.FC<CommentItemProps> = ({
   comment,
   depth,
+  postSlug,
   onReply,
+  onUpdate,
   collapsedThreads,
   toggleCollapse,
 }) => {
   const isCollapsed = collapsedThreads.has(comment.id);
   const hasChildren = comment.children.length > 0;
-  const maxDepth = 4; // Max visual nesting depth
+  const maxDepth = 4;
+
+  // Edit state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(comment.content);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const canEdit = isOwnComment(comment.id);
+
+  const handleStartEdit = useCallback(() => {
+    setIsEditing(true);
+    setEditContent(comment.content);
+    setEditError(null);
+  }, [comment.content]);
+
+  const handleCancelEdit = useCallback(() => {
+    setIsEditing(false);
+    setEditContent(comment.content);
+    setEditError(null);
+  }, [comment.content]);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!editContent.trim()) {
+      setEditError('Comment cannot be empty');
+      return;
+    }
+
+    setIsSaving(true);
+    setEditError(null);
+
+    try {
+      const updated = await updateComment(postSlug, comment.id, editContent.trim());
+      onUpdate(updated);
+      setIsEditing(false);
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'Failed to save');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [postSlug, comment.id, editContent, onUpdate]);
 
   return (
     <div className="relative">
@@ -95,34 +145,94 @@ const CommentItem: React.FC<CommentItemProps> = ({
               (edited)
             </span>
           )}
+          {canEdit && (
+            <span className="text-xs px-1" style={{ color: 'var(--term-success)', backgroundColor: 'var(--term-selection)' }}>
+              yours
+            </span>
+          )}
         </div>
 
-        {/* Comment Content */}
-        <div
-          className="prose prose-invert prose-sm max-w-none markdown-content text-sm"
-          style={{ color: 'var(--term-foreground)' }}
-          dangerouslySetInnerHTML={{ __html: renderMarkdown(comment.content) }}
-        />
+        {/* Comment Content or Edit Form */}
+        {isEditing ? (
+          <div className="space-y-2">
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="w-full p-2 bg-transparent border outline-none font-mono text-sm resize-y"
+              style={{
+                color: 'var(--term-foreground)',
+                borderColor: 'var(--term-primary)',
+                fontSize: '16px',
+                minHeight: '80px',
+              }}
+              maxLength={10000}
+            />
+            {editError && (
+              <div className="text-xs" style={{ color: 'var(--term-error)' }}>
+                {editError}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveEdit}
+                disabled={isSaving}
+                className="px-3 py-1 text-xs font-medium touch-manipulation"
+                style={{
+                  backgroundColor: 'var(--term-primary)',
+                  color: 'var(--term-background)',
+                  opacity: isSaving ? 0.5 : 1,
+                }}
+              >
+                {isSaving ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                disabled={isSaving}
+                className="px-3 py-1 text-xs touch-manipulation"
+                style={{ color: 'var(--term-muted)' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div
+            className="prose prose-invert prose-sm max-w-none markdown-content text-sm"
+            style={{ color: 'var(--term-foreground)' }}
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(comment.content) }}
+          />
+        )}
 
         {/* Actions */}
-        <div className="flex items-center gap-3 mt-2">
-          <button
-            onClick={() => onReply(comment)}
-            className="text-xs touch-manipulation"
-            style={{ color: 'var(--term-muted)' }}
-          >
-            Reply
-          </button>
-          {hasChildren && (
+        {!isEditing && (
+          <div className="flex items-center gap-3 mt-2">
             <button
-              onClick={() => toggleCollapse(comment.id)}
+              onClick={() => onReply(comment)}
               className="text-xs touch-manipulation"
               style={{ color: 'var(--term-muted)' }}
             >
-              {isCollapsed ? `[+] ${comment.children.length} replies` : '[-] Collapse'}
+              Reply
             </button>
-          )}
-        </div>
+            {canEdit && (
+              <button
+                onClick={handleStartEdit}
+                className="text-xs touch-manipulation"
+                style={{ color: 'var(--term-muted)' }}
+              >
+                Edit
+              </button>
+            )}
+            {hasChildren && (
+              <button
+                onClick={() => toggleCollapse(comment.id)}
+                className="text-xs touch-manipulation"
+                style={{ color: 'var(--term-muted)' }}
+              >
+                {isCollapsed ? `[+] ${comment.children.length} replies` : '[-] Collapse'}
+              </button>
+            )}
+          </div>
+        )}
       </motion.div>
 
       {/* Nested Replies */}
@@ -139,7 +249,9 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 key={child.id}
                 comment={child}
                 depth={depth + 1}
+                postSlug={postSlug}
                 onReply={onReply}
+                onUpdate={onUpdate}
                 collapsedThreads={collapsedThreads}
                 toggleCollapse={toggleCollapse}
               />
@@ -201,7 +313,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postSlug }) => {
     setReplyingTo(comment);
     setContent('');
     setShowPreview(false);
-    // Scroll to editor
     document.getElementById('comment-editor')?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
@@ -223,6 +334,11 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postSlug }) => {
     });
   }, []);
 
+  // Handle comment update (from inline edit)
+  const handleCommentUpdate = useCallback((updated: Comment) => {
+    setComments(prev => prev.map(c => c.id === updated.id ? updated : c));
+  }, []);
+
   // Handle comment submission
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -242,7 +358,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postSlug }) => {
         parentId: replyingTo?.id,
       });
 
-      // Add to list
       setComments(prev => [...prev, newComment]);
       setContent('');
       setShowPreview(false);
@@ -290,7 +405,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postSlug }) => {
                 key={comment.id}
                 comment={comment}
                 depth={0}
+                postSlug={postSlug}
                 onReply={handleReply}
+                onUpdate={handleCommentUpdate}
                 collapsedThreads={collapsedThreads}
                 toggleCollapse={toggleCollapse}
               />

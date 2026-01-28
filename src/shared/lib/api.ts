@@ -196,6 +196,7 @@ export interface Comment {
 // localStorage keys for comment author identity
 const AUTHOR_TOKEN_KEY = 'comment_author_token';
 const AUTHOR_NAME_KEY = 'comment_author_name';
+const OWNED_COMMENTS_KEY = 'comment_owned_ids';
 
 // Generate or retrieve author token from localStorage
 export function getAuthorToken(): string {
@@ -216,6 +217,28 @@ export function saveAuthorName(name: string): void {
   if (name.trim()) {
     localStorage.setItem(AUTHOR_NAME_KEY, name.trim());
   }
+}
+
+// Track owned comments for edit capability
+function getOwnedCommentIds(): Set<string> {
+  try {
+    const stored = localStorage.getItem(OWNED_COMMENTS_KEY);
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function addOwnedComment(id: string): void {
+  const owned = getOwnedCommentIds();
+  owned.add(id);
+  // Keep only last 100 to prevent unbounded growth
+  const arr = Array.from(owned).slice(-100);
+  localStorage.setItem(OWNED_COMMENTS_KEY, JSON.stringify(arr));
+}
+
+export function isOwnComment(commentId: string): boolean {
+  return getOwnedCommentIds().has(commentId);
 }
 
 // Fetch comments for a blog post
@@ -254,6 +277,36 @@ export async function createComment(
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error || 'Failed to create comment');
+  }
+
+  const newComment = await res.json();
+
+  // Track this comment as owned
+  addOwnedComment(newComment.id);
+
+  return newComment;
+}
+
+// Update an existing comment (requires ownership or admin)
+export async function updateComment(
+  postSlug: string,
+  commentId: string,
+  content: string
+): Promise<Comment> {
+  const authorToken = getAuthorToken();
+
+  const res = await fetch(`${API_URL}/api/comments/${postSlug}/${commentId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      content,
+      authorToken,
+    }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to update comment');
   }
 
   return res.json();
