@@ -90,6 +90,13 @@
   min-height: 0; /* Important for flex children */
   /* Prevent pull-to-refresh when scrolling terminal */
   overscroll-behavior: contain;
+  /* Allow our custom touch scroll handlers to work on mobile */
+  touch-action: none;
+}
+
+/* Re-enable touch-action for xterm canvas for text selection */
+.ssh-terminal-container .xterm-screen {
+  touch-action: manipulation;
 }
 
 /* Ensure xterm fills container */

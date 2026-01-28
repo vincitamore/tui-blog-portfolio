@@ -31,6 +31,11 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
   const [isMobile, setIsMobile] = useState(false);
   const [showCommandBar, setShowCommandBar] = useState(false);
 
+  // Touch scrolling state
+  const touchStartY = useRef<number | null>(null);
+  const touchScrolling = useRef(false);
+  const lastScrollTime = useRef(0);
+
   // SSH connection hook
   const {
     status,
@@ -221,11 +226,6 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     };
   }, []); // Empty deps - run once on mount
 
-  // Handle keyboard focus
-  const handleContainerClick = useCallback(() => {
-    xtermRef.current?.focus();
-  }, []);
-
   // Mobile command bar key handler
   const handleMobileKey = useCallback((key: string) => {
     sendInput(key);
@@ -248,6 +248,60 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     return () => {
       document.body.style.overscrollBehavior = originalOverscroll;
     };
+  }, []);
+
+  // Touch scroll handlers for smooth mobile scrolling
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      touchStartY.current = e.touches[0].clientY;
+      touchScrolling.current = false;
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (touchStartY.current === null || e.touches.length !== 1) return;
+
+    const currentY = e.touches[0].clientY;
+    const deltaY = touchStartY.current - currentY;
+    const now = Date.now();
+
+    // Only process if enough time has passed (throttle)
+    if (now - lastScrollTime.current < 16) return; // ~60fps
+    lastScrollTime.current = now;
+
+    // If we've moved more than a small threshold, we're scrolling
+    if (Math.abs(deltaY) > 5) {
+      touchScrolling.current = true;
+
+      // Scroll the terminal
+      if (xtermRef.current) {
+        // Calculate lines to scroll based on delta
+        // Adjust sensitivity - smaller divisor = faster scrolling
+        const linesToScroll = Math.round(deltaY / 20);
+        if (linesToScroll !== 0) {
+          xtermRef.current.scrollLines(linesToScroll);
+          touchStartY.current = currentY; // Reset for continuous scrolling
+        }
+      }
+
+      // Prevent default to stop browser scrolling
+      e.preventDefault();
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    touchStartY.current = null;
+    // Small delay before allowing click to prevent accidental taps after scroll
+    setTimeout(() => {
+      touchScrolling.current = false;
+    }, 100);
+  }, []);
+
+  // Modified click handler to ignore clicks during/after scroll
+  const handleContainerClick = useCallback(() => {
+    if (!touchScrolling.current) {
+      xtermRef.current?.focus();
+    }
   }, []);
 
   // Get status text
@@ -289,6 +343,9 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
         ref={terminalRef}
         className="ssh-terminal-container"
         onClick={handleContainerClick}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       />
 
       {/* Mobile command bar */}
