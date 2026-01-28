@@ -149,6 +149,31 @@ tuiRenderer.paragraph = function({ tokens }: Tokens.Paragraph): string {
   return `<p class="tui-paragraph">${text}</p>`;
 };
 
+// Tables with box-drawing borders
+tuiRenderer.table = function({ header, rows }: Tokens.Table): string {
+  // Render header cells
+  const headerCells = header.map(cell => {
+    const text = this.parser.parseInline(cell.tokens);
+    return `<th class="tui-table-header">${text}</th>`;
+  }).join('');
+
+  // Render body rows
+  const bodyRows = rows.map(row => {
+    const cells = row.map(cell => {
+      const text = this.parser.parseInline(cell.tokens);
+      return `<td class="tui-table-cell">${text}</td>`;
+    }).join('');
+    return `<tr class="tui-table-row">${cells}</tr>`;
+  }).join('');
+
+  return `<div class="tui-table-wrapper">
+<table class="tui-table">
+<thead><tr class="tui-table-header-row">${headerCells}</tr></thead>
+<tbody>${bodyRows}</tbody>
+</table>
+</div>`;
+};
+
 // Configure marked with TUI renderer
 marked.setOptions({
   gfm: true,

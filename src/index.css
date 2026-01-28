@@ -574,6 +574,45 @@
     color: var(--term-error);
   }
 
+  /* Tables with box-drawing borders */
+  .markdown-content .tui-table-wrapper {
+    margin: 1em 0;
+    overflow-x: auto;
+  }
+
+  .markdown-content .tui-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.9em;
+  }
+
+  .markdown-content .tui-table-header-row {
+    border-bottom: 1px solid var(--term-border);
+  }
+
+  .markdown-content .tui-table-header {
+    padding: 0.5em 1em;
+    text-align: left;
+    color: var(--term-primary);
+    font-weight: bold;
+    border: 1px solid var(--term-border);
+    background-color: color-mix(in srgb, var(--term-border) 15%, transparent);
+  }
+
+  .markdown-content .tui-table-row {
+    border-bottom: 1px solid var(--term-border);
+  }
+
+  .markdown-content .tui-table-row:hover {
+    background-color: color-mix(in srgb, var(--term-border) 10%, transparent);
+  }
+
+  .markdown-content .tui-table-cell {
+    padding: 0.5em 1em;
+    border: 1px solid var(--term-border);
+    vertical-align: top;
+  }
+
   /* Horizontal rule */
   .markdown-content .tui-hr {
     margin: 1.5em 0;
