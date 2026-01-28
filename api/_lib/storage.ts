@@ -26,7 +26,14 @@ export async function readJsonBlob<T>(key: string, defaultValue: T): Promise<T> 
       return defaultValue;
     }
     
-    const response = await fetch(blobs[0].url);
+    // Add cache-busting to avoid CDN stale reads
+    const response = await fetch(blobs[0].url, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      },
+    });
     if (!response.ok) {
       console.error(`Failed to fetch blob: ${response.status} ${response.statusText}`);
       return defaultValue;
