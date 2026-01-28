@@ -40,30 +40,56 @@ const PortfolioApp: React.FC<PortfolioAppProps> = ({ onBack, isAdmin = false }) 
     }
   }, [navigate]);
 
-  // Load projects and handle direct slug navigation
+  // Load projects on mount
   useEffect(() => {
-    setIsLoading(true);
-
     const loadData = async () => {
+      setIsLoading(true);
       const allProjects = await fetchProjects();
       setProjects(allProjects);
-
-      // If we have a slug in URL, load that project directly
-      if (slug) {
-        const project = await fetchProjectBySlug(slug);
-        if (project) {
-          setViewingProject(project);
-          // Find the index for keyboard navigation
-          const idx = allProjects.findIndex(p => p.slug === slug);
-          if (idx >= 0) setSelectedIndex(idx);
-        }
-      }
-
       setIsLoading(false);
     };
 
     loadData();
-  }, [slug]);
+  }, []);
+
+  // Handle slug changes (direct navigation or programmatic)
+  useEffect(() => {
+    if (!slug) {
+      // No slug - clear viewing state if we have one (user pressed back)
+      // But don't clear if we're navigating programmatically via viewProject(null)
+      return;
+    }
+
+    // If we already have this project loaded, just update state
+    const existingProject = projects.find(p => p.slug === slug);
+    if (existingProject) {
+      setViewingProject(existingProject);
+      const idx = projects.findIndex(p => p.slug === slug);
+      if (idx >= 0) setSelectedIndex(idx);
+      return;
+    }
+
+    // Direct navigation to slug - fetch the specific project
+    if (projects.length > 0) {
+      // Projects already loaded but this slug not found - fetch it
+      const fetchProject = async () => {
+        const project = await fetchProjectBySlug(slug);
+        if (project) {
+          setViewingProject(project);
+        }
+      };
+      fetchProject();
+    } else {
+      // Projects not loaded yet - will be handled after projects load
+      const fetchProject = async () => {
+        const project = await fetchProjectBySlug(slug);
+        if (project) {
+          setViewingProject(project);
+        }
+      };
+      fetchProject();
+    }
+  }, [slug, projects]);
 
   // Move project up in the list
   const handleMoveUp = useCallback(async () => {
