@@ -672,9 +672,11 @@ const App: React.FC = () => {
   );
 
   // Animated wrapper for sub-apps
+  // Use currentScreen as key so sub-route changes (e.g., /portfolio -> /portfolio/slug)
+  // don't cause remounts within the same section
   const AnimatedApp = ({ children }: { children: React.ReactNode }) => (
     <motion.div
-      key={location.pathname}
+      key={currentScreen}
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.98 }}
@@ -713,7 +715,7 @@ const App: React.FC = () => {
         }}
       >
         <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
+          <Routes location={location} key={currentScreen}>
             <Route path="/" element={TerminalScreen} />
             <Route path="/portfolio/*" element={
               <AnimatedApp>
