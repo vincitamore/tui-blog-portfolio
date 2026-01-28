@@ -90,7 +90,8 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
             wrapper.style.paddingBottom = '';
             wrapper.classList.remove('keyboard-open');
           }
-          // Trigger xterm fit after a brief delay for layout to settle
+          // Trigger xterm fit after layout settles - 100ms is more reliable
+          // than 50ms for mobile keyboard transitions
           setTimeout(() => {
             if (fitAddonRef.current && xtermRef.current) {
               fitAddonRef.current.fit();
@@ -100,7 +101,7 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
                 resizeRef.current(term.cols, term.rows);
               }
             }
-          }, 50);
+          }, 100);
         }
       };
 

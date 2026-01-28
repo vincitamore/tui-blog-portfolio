@@ -33,7 +33,8 @@ const TerminalWindow: React.FC<TerminalWindowProps> = ({
           0 24px 48px -8px rgba(0, 0, 0, 0.3),
           0 0 80px -20px var(--term-primary)
         `,
-        transform: 'perspective(1000px)',
+        // Note: perspective(1000px) removed - it creates a containing block
+        // that breaks xterm's absolute textarea positioning on mobile
         ...style,
       }}
     >

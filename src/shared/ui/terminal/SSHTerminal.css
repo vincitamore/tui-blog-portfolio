@@ -92,6 +92,9 @@
   overscroll-behavior: contain;
   /* Position relative for absolute children */
   position: relative;
+  /* Create isolated stacking context - prevents ancestor transforms
+     from affecting xterm's absolute positioning calculations */
+  isolation: isolate;
 }
 
 /* Ensure xterm fills container completely */
