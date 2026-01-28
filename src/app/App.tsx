@@ -652,8 +652,8 @@ const App: React.FC = () => {
     <motion.div
       key="terminal"
       initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      animate={{ opacity: 1, pointerEvents: 'auto' as const }}
+      exit={{ opacity: 0, pointerEvents: 'none' as const }}
       transition={{ duration: 0.2 }}
       className="h-full"
     >
@@ -678,8 +678,8 @@ const App: React.FC = () => {
     <motion.div
       key={currentScreen}
       initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1, pointerEvents: 'auto' as const }}
+      exit={{ opacity: 0, scale: 0.98, pointerEvents: 'none' as const }}
       transition={{ duration: 0.2 }}
       className="h-full"
     >
