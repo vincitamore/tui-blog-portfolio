@@ -75,7 +75,20 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     setShowCommandBar(isMobile && status === 'connected');
   }, [isMobile, status]);
 
-  // Initialize xterm.js
+  // Store latest callbacks in refs to avoid dependency issues
+  const sendInputRef = useRef(sendInput);
+  const resizeRef = useRef(resize);
+  const connectRef = useRef(connect);
+  const disconnectRef = useRef(disconnect);
+
+  useEffect(() => {
+    sendInputRef.current = sendInput;
+    resizeRef.current = resize;
+    connectRef.current = connect;
+    disconnectRef.current = disconnect;
+  }, [sendInput, resize, connect, disconnect]);
+
+  // Initialize xterm.js - runs once on mount
   useEffect(() => {
     if (!terminalRef.current) return;
 
@@ -129,14 +142,14 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
 
     // Handle terminal input
     term.onData((data) => {
-      sendInput(data);
+      sendInputRef.current(data);
     });
 
     // Handle resize
     const handleResize = () => {
       fitAddon.fit();
       if (term.cols && term.rows) {
-        resize(term.cols, term.rows);
+        resizeRef.current(term.cols, term.rows);
       }
     };
 
@@ -150,12 +163,12 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     window.addEventListener('resize', handleResize);
 
     // Connect to SSH
-    connect();
+    connectRef.current();
 
     // Send initial size after connection
     setTimeout(() => {
       if (term.cols && term.rows) {
-        resize(term.cols, term.rows);
+        resizeRef.current(term.cols, term.rows);
       }
     }, 500);
 
@@ -163,12 +176,12 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     return () => {
       window.removeEventListener('resize', handleResize);
       resizeObserver.disconnect();
-      disconnect();
+      disconnectRef.current();
       term.dispose();
       xtermRef.current = null;
       fitAddonRef.current = null;
     };
-  }, [connect, disconnect, sendInput, resize]);
+  }, []); // Empty deps - run once on mount
 
   // Handle keyboard focus
   const handleContainerClick = useCallback(() => {
