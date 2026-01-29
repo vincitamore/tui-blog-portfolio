@@ -16,7 +16,8 @@
   /* Safe area for iOS - only when keyboard closed */
   padding-bottom: max(8px, env(safe-area-inset-bottom));
   /* Smooth repositioning when keyboard opens/closes */
-  transition: bottom 0.15s ease-out;
+  transition: transform 0.15s ease-out;
+  will-change: transform;
 }
 
 /* When keyboard is attached, no need for safe-area padding */

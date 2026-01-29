@@ -91,22 +91,31 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
         }
 
         const keyboardHeight = window.innerHeight - viewport.height;
-        const commandBarHeight = 60; // Height of MobileCommandBar (button row only)
-        const safeArea = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab') || '0', 10);
 
-        // Use PARENT height, not window.innerHeight - the wrapper is inside TerminalWindow
-        // which has its own title bar and padding
-        const parentHeight = wrapper.parentElement?.clientHeight || viewport.height;
+        // Measure actual command bar height instead of hardcoding
+        const commandBar = document.querySelector('.mobile-command-bar') as HTMLElement;
+        const commandBarHeight = commandBar?.offsetHeight || 60;
+
+        const safeArea = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab') || '0', 10);
 
         // Keyboard open threshold: > 50 to match MobileCommandBar
         if (keyboardHeight > 50) {
-          // Keyboard is open - use visual viewport height minus command bar
-          // Don't subtract safeArea - it's behind the keyboard
-          const availableHeight = viewport.height - commandBarHeight;
+          // Keyboard is open
+          // Use getBoundingClientRect to find actual available space
+          // The wrapper starts below App padding + title bar
+          // The command bar is at bottom of visual viewport
+          const wrapperTop = wrapper.getBoundingClientRect().top;
+
+          // Available height = from wrapper's top to command bar's top
+          // Command bar top = viewport.height - commandBarHeight (it sits at bottom of visual viewport)
+          const commandBarTop = viewport.height - commandBarHeight;
+          const availableHeight = Math.max(commandBarTop - wrapperTop, 100);
+
           wrapper.style.height = `${availableHeight}px`;
           wrapper.classList.add('keyboard-open');
         } else {
           // Keyboard closed - use parent height minus command bar and safe area
+          const parentHeight = wrapper.parentElement?.clientHeight || viewport.height;
           const availableHeight = parentHeight - commandBarHeight - safeArea;
           wrapper.style.height = `${availableHeight}px`;
           wrapper.classList.remove('keyboard-open');

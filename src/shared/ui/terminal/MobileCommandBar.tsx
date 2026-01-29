@@ -41,16 +41,44 @@ export const MobileCommandBar: React.FC<MobileCommandBarProps> = ({
   const barRef = useRef<HTMLDivElement>(null);
 
   // Track keyboard via visual viewport API
+  // Use transform positioning - more reliable than bottom positioning
+  // because position:fixed with bottom anchors to layout viewport, not visual viewport
   useEffect(() => {
     if (!visible) return;
 
     const viewport = window.visualViewport;
     if (!viewport) return;
 
+    let pendingUpdate = false;
+
     const handleResize = () => {
-      // Calculate keyboard height from viewport difference
-      const keyboardH = window.innerHeight - viewport.height;
-      setKeyboardHeight(keyboardH > 50 ? keyboardH : 0);
+      if (pendingUpdate) return;
+      pendingUpdate = true;
+
+      requestAnimationFrame(() => {
+        pendingUpdate = false;
+        const bar = barRef.current;
+        if (!bar) return;
+
+        const keyboardH = window.innerHeight - viewport.height;
+
+        if (keyboardH > 50) {
+          // Keyboard is open - position at bottom of visual viewport
+          // Visual viewport bottom = viewport.offsetTop + viewport.height
+          // We want bar bottom at that position
+          // With position:fixed bottom:0, the bar sits at layout viewport bottom
+          // We need to translate it up by (keyboardH - viewport.offsetTop) to sit at visual viewport bottom
+          // translateY negative = up, positive = down
+          // Calculation: from layout bottom, we need to go up by keyboardH, then down by offsetTop
+          const translateY = viewport.offsetTop - keyboardH;
+          bar.style.transform = `translateY(${translateY}px)`;
+          setKeyboardHeight(keyboardH);
+        } else {
+          // Keyboard closed - reset transform
+          bar.style.transform = '';
+          setKeyboardHeight(0);
+        }
+      });
     };
 
     viewport.addEventListener('resize', handleResize);
@@ -186,7 +214,7 @@ export const MobileCommandBar: React.FC<MobileCommandBarProps> = ({
     <div
       ref={barRef}
       className={`mobile-command-bar ${keyboardHeight > 0 ? 'keyboard-attached' : ''}`}
-      style={keyboardHeight > 0 ? { bottom: `${keyboardHeight}px` } : undefined}
+      // Transform is set dynamically in useEffect for keyboard positioning
     >
       {/* Hidden input to capture keyboard - visually invisible but functional */}
       <input
