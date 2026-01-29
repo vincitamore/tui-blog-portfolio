@@ -1,10 +1,11 @@
 /**
  * Mobile Command Bar
- * Floating bar with text input and modifier keys for mobile terminal interaction.
+ * Floating bar with modifier keys for mobile terminal interaction.
+ * Keys: Esc | Ctrl | Shift | Tab | Arrows
  *
- * KEY INSIGHT: Don't rely on xterm's hidden textarea - it doesn't work well on mobile.
- * Instead, we use our own visible input that captures keystrokes and forwards them
- * to the terminal. xterm becomes display-only on mobile.
+ * NOTE: No text input field - xterm handles text input natively.
+ * User taps terminal to open keyboard, types, text flows to terminal.
+ * This bar just provides modifier keys that mobile keyboards lack.
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
@@ -14,7 +15,6 @@ export interface MobileCommandBarProps {
   onKey: (key: string) => void;
   onEscape: () => void;
   visible: boolean;
-  /** Ref to focus the input from parent */
   inputRef?: React.RefObject<HTMLInputElement>;
 }
 
@@ -33,14 +33,12 @@ export const MobileCommandBar: React.FC<MobileCommandBarProps> = ({
   onKey,
   onEscape,
   visible,
-  inputRef: externalInputRef,
+  inputRef,
 }) => {
   const [ctrlActive, setCtrlActive] = useState(false);
   const [shiftActive, setShiftActive] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const barRef = useRef<HTMLDivElement>(null);
-  const internalInputRef = useRef<HTMLInputElement>(null);
-  const inputRef = externalInputRef || internalInputRef;
 
   // Track keyboard via visual viewport API
   useEffect(() => {
@@ -110,13 +108,11 @@ export const MobileCommandBar: React.FC<MobileCommandBarProps> = ({
     onEscape();
   }, [onEscape]);
 
-  // Handle text input - capture keystrokes and send to terminal
+  // Handle keyboard input from hidden input field
   const handleInputKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      // Prevent default for most keys - we handle them ourselves
       const key = e.key;
 
-      // Handle special keys
       if (key === 'Enter') {
         e.preventDefault();
         onKey(KEYS.ENTER);
@@ -124,7 +120,7 @@ export const MobileCommandBar: React.FC<MobileCommandBarProps> = ({
       }
       if (key === 'Backspace') {
         e.preventDefault();
-        onKey('\x7f'); // DEL character for backspace
+        onKey('\x7f');
         return;
       }
       if (key === 'Escape') {
@@ -157,35 +153,29 @@ export const MobileCommandBar: React.FC<MobileCommandBarProps> = ({
         handleKey(KEYS.RIGHT);
         return;
       }
-
-      // For printable characters, let the input event handle it
-      // (this allows IME composition to work)
     },
     [onKey, onEscape, handleKey]
   );
 
-  // Handle actual text input (works with IME)
+  // Handle text input (forwards to terminal)
   const handleInput = useCallback(
     (e: React.FormEvent<HTMLInputElement>) => {
       const input = e.currentTarget;
       const value = input.value;
 
       if (value) {
-        // Send each character
         for (const char of value) {
           handleKey(char);
         }
-        // Clear the input
         input.value = '';
       }
     },
     [handleKey]
   );
 
-  // Focus the input when command bar becomes visible
+  // Auto-focus the hidden input when bar becomes visible
   useEffect(() => {
-    if (visible && inputRef.current) {
-      // Small delay to ensure keyboard has time to open
+    if (visible && inputRef?.current) {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [visible, inputRef]);
@@ -198,22 +188,19 @@ export const MobileCommandBar: React.FC<MobileCommandBarProps> = ({
       className={`mobile-command-bar ${keyboardHeight > 0 ? 'keyboard-attached' : ''}`}
       style={keyboardHeight > 0 ? { bottom: `${keyboardHeight}px` } : undefined}
     >
-      {/* Text input row - this captures all keyboard input */}
-      <div className="mobile-command-bar-input-row">
-        <input
-          ref={inputRef}
-          type="text"
-          className="mobile-cmd-input"
-          placeholder="Type here..."
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          onKeyDown={handleInputKeyDown}
-          onInput={handleInput}
-          aria-label="Terminal input"
-        />
-      </div>
+      {/* Hidden input to capture keyboard - visually invisible but functional */}
+      <input
+        ref={inputRef}
+        type="text"
+        className="mobile-cmd-hidden-input"
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
+        onKeyDown={handleInputKeyDown}
+        onInput={handleInput}
+        aria-label="Terminal input"
+      />
 
       <div className="mobile-command-bar-row">
         {/* Escape */}

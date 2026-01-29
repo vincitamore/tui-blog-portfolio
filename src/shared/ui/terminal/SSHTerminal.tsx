@@ -222,8 +222,7 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
       textarea.setAttribute('autocapitalize', 'off');
       textarea.setAttribute('spellcheck', 'false');
 
-      // On mobile, DISABLE the textarea entirely - we use our own input field
-      // This prevents accidental focus and input through xterm's textarea
+      // On mobile, disable xterm's textarea - we use our own hidden input
       if (window.innerWidth < 768) {
         textarea.setAttribute('disabled', 'true');
         textarea.setAttribute('readonly', 'true');
@@ -242,10 +241,8 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     });
 
     // Handle terminal input - ONLY on desktop
-    // On mobile, input comes through MobileCommandBar's input field
+    // On mobile, input comes through MobileCommandBar's hidden input
     term.onData((data) => {
-      // Check if we're on mobile - if so, ignore xterm's input
-      // (all input should come through our controlled input field)
       if (window.innerWidth < 768) {
         return; // Ignore xterm input on mobile
       }
@@ -376,18 +373,16 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     }, 100);
   }, []);
 
-  // Ref for the mobile input
+  // Ref for the mobile hidden input
   const mobileInputRef = useRef<HTMLInputElement>(null);
 
-  // Modified click handler - on mobile, focus the command bar input instead of xterm
+  // Click handler - on mobile, focus the hidden input in command bar
   const handleContainerClick = useCallback(() => {
     if (touchScrolling.current) return;
 
     if (isMobile && mobileInputRef.current) {
-      // On mobile, focus our controlled input in the command bar
       mobileInputRef.current.focus();
     } else if (xtermRef.current) {
-      // On desktop, focus xterm directly
       xtermRef.current.focus();
     }
   }, [isMobile]);
@@ -436,7 +431,7 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
         onTouchEnd={handleTouchEnd}
       />
 
-      {/* Mobile command bar - handles all input on mobile */}
+      {/* Mobile command bar - hidden input + modifier keys */}
       <MobileCommandBar
         visible={showCommandBar}
         onKey={handleMobileKey}

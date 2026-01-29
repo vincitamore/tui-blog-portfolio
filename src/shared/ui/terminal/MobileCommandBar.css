@@ -19,40 +19,31 @@
   transition: bottom 0.15s ease-out;
 }
 
+/* Hidden input - captures keyboard but invisible */
+.mobile-cmd-hidden-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  /* Position at top-left of command bar so keyboard anchors here */
+  top: 0;
+  left: 0;
+  /* Prevent any visual artifacts */
+  pointer-events: none;
+  /* But allow programmatic focus */
+}
+
+/* When focused, ensure it can receive input */
+.mobile-cmd-hidden-input:focus {
+  pointer-events: auto;
+}
+
 /* When keyboard is open, transform to sit above it */
 .mobile-command-bar.keyboard-attached {
   /* Transform set dynamically via style attribute */
-}
-
-/* Input row - text input for capturing keyboard */
-.mobile-command-bar-input-row {
-  margin-bottom: 8px;
-}
-
-.mobile-cmd-input {
-  width: 100%;
-  padding: 12px 14px;
-  font-family: 'JetBrains Mono', Menlo, Monaco, Consolas, monospace;
-  font-size: 16px; /* Prevents iOS zoom on focus */
-  color: var(--term-foreground);
-  background: var(--term-selection);
-  border: 1px solid var(--term-border);
-  border-radius: 6px;
-  outline: none;
-  /* Disable all auto-features */
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-}
-
-.mobile-cmd-input:focus {
-  border-color: var(--term-primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--term-primary) 30%, transparent);
-}
-
-.mobile-cmd-input::placeholder {
-  color: var(--term-muted);
-  opacity: 0.7;
 }
 
 /* Button row */
