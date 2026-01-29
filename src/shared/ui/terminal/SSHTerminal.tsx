@@ -91,7 +91,7 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
         }
 
         const keyboardHeight = window.innerHeight - viewport.height;
-        const commandBarHeight = 120; // Height of MobileCommandBar (input row + button row)
+        const commandBarHeight = 60; // Height of MobileCommandBar (button row only)
         const safeArea = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab') || '0', 10);
 
         // ALWAYS set explicit height on mobile - the command bar is position:fixed

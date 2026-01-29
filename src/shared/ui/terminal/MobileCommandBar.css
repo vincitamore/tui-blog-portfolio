@@ -31,14 +31,31 @@
   /* Position at top-left of command bar so keyboard anchors here */
   top: 0;
   left: 0;
+  /* Suppress all browser UI */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
   /* Prevent any visual artifacts */
   pointer-events: none;
-  /* But allow programmatic focus */
+  /* Suppress autocomplete dropdown */
+  font-size: 16px; /* Prevents iOS zoom */
 }
 
 /* When focused, ensure it can receive input */
 .mobile-cmd-hidden-input:focus {
   pointer-events: auto;
+  outline: none;
+}
+
+/* Hide any autofill styling */
+.mobile-cmd-hidden-input:-webkit-autofill,
+.mobile-cmd-hidden-input:-webkit-autofill:hover,
+.mobile-cmd-hidden-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+  -webkit-text-fill-color: transparent !important;
 }
 
 /* When keyboard is open, transform to sit above it */

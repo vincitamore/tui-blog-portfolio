@@ -197,9 +197,15 @@ export const MobileCommandBar: React.FC<MobileCommandBarProps> = ({
         autoCorrect="off"
         autoCapitalize="off"
         spellCheck={false}
+        data-form-type="other"
+        data-lpignore="true"
+        data-1p-ignore="true"
+        enterKeyHint="send"
+        inputMode="text"
         onKeyDown={handleInputKeyDown}
         onInput={handleInput}
         aria-label="Terminal input"
+        aria-hidden="true"
       />
 
       <div className="mobile-command-bar-row">
