@@ -94,16 +94,20 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
         const commandBarHeight = 60; // Height of MobileCommandBar (button row only)
         const safeArea = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab') || '0', 10);
 
-        // ALWAYS set explicit height on mobile - the command bar is position:fixed
-        // and overlays the terminal, so we must account for it whether keyboard is open or not
-        if (keyboardHeight > 100) {
-          // Keyboard is open - use visual viewport height
-          const availableHeight = viewport.height - commandBarHeight - safeArea;
+        // Use PARENT height, not window.innerHeight - the wrapper is inside TerminalWindow
+        // which has its own title bar and padding
+        const parentHeight = wrapper.parentElement?.clientHeight || viewport.height;
+
+        // Keyboard open threshold: > 50 to match MobileCommandBar
+        if (keyboardHeight > 50) {
+          // Keyboard is open - use visual viewport height minus command bar
+          // Don't subtract safeArea - it's behind the keyboard
+          const availableHeight = viewport.height - commandBarHeight;
           wrapper.style.height = `${availableHeight}px`;
           wrapper.classList.add('keyboard-open');
         } else {
-          // Keyboard closed - use full inner height minus command bar and safe area
-          const availableHeight = window.innerHeight - commandBarHeight - safeArea;
+          // Keyboard closed - use parent height minus command bar and safe area
+          const availableHeight = parentHeight - commandBarHeight - safeArea;
           wrapper.style.height = `${availableHeight}px`;
           wrapper.classList.remove('keyboard-open');
         }

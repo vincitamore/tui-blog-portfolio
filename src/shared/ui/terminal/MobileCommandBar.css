@@ -19,6 +19,11 @@
   transition: bottom 0.15s ease-out;
 }
 
+/* When keyboard is attached, no need for safe-area padding */
+.mobile-command-bar.keyboard-attached {
+  padding-bottom: 8px;
+}
+
 /* Hidden input - captures keyboard but invisible */
 .mobile-cmd-hidden-input {
   position: absolute;
